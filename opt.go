@@ -13,6 +13,13 @@ type Option interface {
 type options struct {
 	rpc *rpcEndpoint
 	ipc ipcEndpoint
+	log *logOpt
+}
+
+func defaultOpt() *options {
+	return &options{
+		log: withDefaultLogOpt(),
+	}
 }
 
 type rpcEndpoint struct {
@@ -47,4 +54,40 @@ func WithIPCEndpoint(path string) Option {
 
 func WithDefaultIPCEndpoint() Option {
 	return WithIPCEndpoint(_defIPCPath)
+}
+
+type logOpt struct {
+	path      string
+	filterLvl logLvl
+	silent    bool
+	logger    Logger
+}
+
+func (l *logOpt) apply(opts *options) {
+	opts.log = l
+}
+
+func WithLogFileOpt(path string, filterLvl logLvl) Option {
+	return &logOpt{
+		path:      path,
+		filterLvl: filterLvl,
+		silent:    true,
+	}
+}
+
+func withDefaultLogOpt() *logOpt {
+	return &logOpt{
+		filterLvl: LvlDebug,
+		silent:    false,
+	}
+}
+
+func WithDefaultLogOpt() Option {
+	return withDefaultLogOpt()
+}
+
+func WithLoggerOpt(logger Logger) Option {
+	return &logOpt{
+		logger: logger,
+	}
 }

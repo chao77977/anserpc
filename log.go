@@ -2,6 +2,7 @@ package anserpc
 
 import (
 	"os"
+	"sync"
 
 	"github.com/chao77977/anserpc/util"
 	log "github.com/inconshreveable/log15"
@@ -15,6 +16,11 @@ const (
 	LvlDebug
 )
 
+var (
+	_xlog Logger
+	once  sync.Once
+)
+
 type logLvl int
 
 type Logger interface {
@@ -25,7 +31,7 @@ type Logger interface {
 	Debug(msg string, ctx ...interface{})
 }
 
-func newLogger(path string, filterLvl logLvl, silent bool) log.Logger {
+func newLogger(path string, filterLvl logLvl, silent bool) Logger {
 	l := log.New("module", "anserpc")
 
 	var h log.Handler
@@ -41,4 +47,14 @@ func newLogger(path string, filterLvl logLvl, silent bool) log.Logger {
 
 	l.SetHandler(log.LvlFilterHandler(log.Lvl(filterLvl), h))
 	return l
+}
+
+func newSafeLogger(opt *logOpt) {
+	once.Do(func() {
+		if opt.logger != nil {
+			_xlog = opt.logger
+		} else if _xlog == nil {
+			_xlog = newLogger(opt.path, opt.filterLvl, opt.silent)
+		}
+	})
 }
