@@ -1,4 +1,4 @@
-module anserpc
+module github.com/chao77977/anserpc
 
 go 1.15
 
