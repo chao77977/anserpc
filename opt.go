@@ -1,5 +1,9 @@
 package anserpc
 
+import (
+	"fmt"
+)
+
 const (
 	_defRPCHost = "127.0.0.1"
 	_defRPCPort = 56789
@@ -31,6 +35,10 @@ func (r *rpcEndpoint) apply(opts *options) {
 	opts.rpc = r
 }
 
+func (r *rpcEndpoint) String() string {
+	return fmt.Sprintf("%s:%d", r.host, r.port)
+}
+
 func WithRPCEndpoint(host string, port int) Option {
 	return &rpcEndpoint{
 		host: host,
@@ -46,6 +54,10 @@ type ipcEndpoint string
 
 func (i ipcEndpoint) apply(opts *options) {
 	opts.ipc = i
+}
+
+func (i ipcEndpoint) String() string {
+	return string(i)
 }
 
 func WithIPCEndpoint(path string) Option {
