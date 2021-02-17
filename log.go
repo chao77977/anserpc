@@ -32,7 +32,7 @@ type Logger interface {
 }
 
 func newLogger(path string, filterLvl logLvl, silent bool) Logger {
-	l := log.New("module", "anserpc")
+	l := log.New()
 
 	var h log.Handler
 	if silent {

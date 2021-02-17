@@ -64,7 +64,7 @@ func (h *httpServer) start() error {
 	h.server = &http.Server{Handler: h}
 
 	go h.serve()
-	_xlog.Info("HTTP Server is running", "endpoint", h.endpoint.String())
+	_xlog.Info("HTTP Server is running on " + h.endpoint.String())
 
 	return nil
 }
@@ -90,7 +90,6 @@ func (h *httpServer) doStop() {
 
 	h.server.Shutdown(context.Background())
 	h.listener.Close()
-	_xlog.Info("HTTP Server is stopped", "endpoint", h.listener.Addr())
 
 	h.endpoint = (*rpcEndpoint)(nil)
 	h.server, h.listener = nil, nil

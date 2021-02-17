@@ -72,6 +72,8 @@ func (a *Anser) disableRPCServer() {
 }
 
 func (a *Anser) Run() {
+	newSafeLogger(a.opts.log)
+
 	if a.rpcAllowed() {
 		if err := a.enableRPCServer(); err != nil {
 			a.disableRPCServer()
@@ -81,7 +83,7 @@ func (a *Anser) Run() {
 	a.wg.Wait()
 
 	if a.rpcErr != nil {
-		_xlog.Error("RPC server failure", "err", a.rpcErr)
+		_xlog.Error("RPC server is stopped", "err", a.rpcErr)
 	}
 
 	_xlog.Info("AnserRPC Service is down")
