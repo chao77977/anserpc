@@ -1,6 +1,7 @@
 package anserpc
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/http"
@@ -56,7 +57,6 @@ func (h *httpServer) start() error {
 
 	listener, err := net.Listen("tcp", h.endpoint.String())
 	if err != nil {
-		// TODO: cleanup
 		return err
 	}
 
@@ -64,7 +64,7 @@ func (h *httpServer) start() error {
 	h.server = &http.Server{Handler: h}
 
 	go h.serve()
-	_xlog.Info("HTTP Server is running", "on", h.endpoint.String())
+	_xlog.Info("HTTP Server is running", "endpoint", h.endpoint.String())
 
 	return nil
 }
@@ -75,6 +75,25 @@ func (h *httpServer) serve() {
 
 func (h *httpServer) wait() error {
 	return <-h.err
+}
+
+func (h *httpServer) stop() {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.doStop()
+}
+
+func (h *httpServer) doStop() {
+	if h.listener == nil {
+		return
+	}
+
+	h.server.Shutdown(context.Background())
+	h.listener.Close()
+	_xlog.Info("HTTP Server is stopped", "endpoint", h.listener.Addr())
+
+	h.endpoint = (*rpcEndpoint)(nil)
+	h.server, h.listener = nil, nil
 }
 
 func (h *httpServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
