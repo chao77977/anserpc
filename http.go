@@ -17,7 +17,9 @@ type httpOpt struct {
 
 func (h *httpOpt) apply(opts *options) {
 	if len(h.vhosts) != 0 {
-		opts.http.vhosts = h.vhosts
+		for _, host := range h.vhosts {
+			opts.http.vhosts = append(opts.http.vhosts, host)
+		}
 	}
 }
 
@@ -70,13 +72,17 @@ type httpServer struct {
 	server   *http.Server
 	err      chan error
 	endpoint *rpcEndpoint
+	head     http.Handler
 }
 
 func newHttpServer(opt *httpOpt) *httpServer {
-	return &httpServer{
+	server := &httpServer{
 		opt: opt,
 		err: make(chan error),
 	}
+
+	server.head = newVirtualHostHandler(opt.vhosts, server)
+	return server
 }
 
 func (h *httpServer) setListenAddr(endpoint *rpcEndpoint) error {
@@ -118,7 +124,7 @@ func (h *httpServer) start() error {
 	}
 
 	h.listener = listener
-	h.server = &http.Server{Handler: h}
+	h.server = &http.Server{Handler: h.head}
 
 	go h.serve()
 	_xlog.Info("HTTP Server is running on " + h.endpoint.String())
