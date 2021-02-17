@@ -5,10 +5,66 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strings"
 	"sync"
+
+	"github.com/chao77977/anserpc/util"
 )
 
+type httpOpt struct {
+	vhosts []string
+}
+
+func (h *httpOpt) apply(opts *options) {
+	if len(h.vhosts) != 0 {
+		opts.http.vhosts = h.vhosts
+	}
+}
+
+type virtualHostHandler struct {
+	vhosts util.StringSet
+	next   http.Handler
+}
+
+func (v *virtualHostHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Host == "" {
+		v.next.ServeHTTP(w, r)
+		return
+	}
+
+	host, _, err := net.SplitHostPort(r.Host)
+	if err != nil {
+		host = r.Host
+	}
+
+	if ip := net.ParseIP(host); ip != nil {
+		v.next.ServeHTTP(w, r)
+		return
+	}
+
+	// validate the host
+	if v.vhosts.Contains("*") || v.vhosts.Contains(host) {
+		v.next.ServeHTTP(w, r)
+		return
+	}
+
+	http.Error(w, "host access denied", http.StatusForbidden)
+}
+
+func newVirtualHostHandler(vhosts []string, next http.Handler) http.Handler {
+	vhs := util.NewStringSet()
+	for _, vhost := range vhosts {
+		vhs.Add(strings.ToLower(vhost))
+	}
+
+	return &virtualHostHandler{
+		vhosts: vhs,
+		next:   next,
+	}
+}
+
 type httpServer struct {
+	opt      *httpOpt
 	mu       sync.Mutex
 	listener net.Listener
 	server   *http.Server
@@ -16,8 +72,9 @@ type httpServer struct {
 	endpoint *rpcEndpoint
 }
 
-func newHttpServer() *httpServer {
+func newHttpServer(opt *httpOpt) *httpServer {
 	return &httpServer{
+		opt: opt,
 		err: make(chan error),
 	}
 }

@@ -15,14 +15,16 @@ type Option interface {
 }
 
 type options struct {
-	rpc *rpcEndpoint
-	ipc ipcEndpoint
-	log *logOpt
+	rpc  *rpcEndpoint
+	ipc  ipcEndpoint
+	log  *logOpt
+	http *httpOpt
 }
 
 func defaultOpt() *options {
 	return &options{
-		log: withDefaultLogOpt(),
+		log:  withDefaultLogOpt(),
+		http: withDefaultHTTPOpt(),
 	}
 }
 
@@ -102,4 +104,24 @@ func WithLoggerOpt(logger Logger) Option {
 	return &logOpt{
 		logger: logger,
 	}
+}
+
+func withDefaultHTTPOpt() *httpOpt {
+	return &httpOpt{}
+}
+
+func WithHTTPVhostOpt(vhosts ...string) Option {
+	opt := &httpOpt{
+		vhosts: make([]string, 0),
+	}
+
+	for _, host := range vhosts {
+		if host == "" {
+			continue
+		}
+
+		opt.vhosts = append(opt.vhosts, host)
+	}
+
+	return opt
 }
