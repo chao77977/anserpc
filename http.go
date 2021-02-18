@@ -35,6 +35,13 @@ type validateHandler struct {
 }
 
 func (v *validateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// permit empty request for health-checking
+	if r.Method == http.MethodGet && r.ContentLength == 0 &&
+		r.URL.RawQuery == "" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
 	// check method
 	if v.deniedMethods.Contains(strings.ToLower(r.Method)) {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
