@@ -3,6 +3,7 @@ package anserpc
 import (
 	"context"
 	"fmt"
+	"mime"
 	"net"
 	"net/http"
 	"strings"
@@ -11,37 +12,64 @@ import (
 	"github.com/chao77977/anserpc/util"
 )
 
+const (
+	_maxReqContentLength = 1024 * 1024 * 5
+)
+
 type httpOpt struct {
-	vhosts        util.StringSet
-	deniedMethods util.StringSet
+	vhosts              util.StringSet
+	deniedMethods       util.StringSet
+	allowedContentTypes util.StringSet
 }
 
 func (h *httpOpt) apply(opts *options) {
 	opts.http.vhosts.Merge(h.vhosts)
 	opts.http.deniedMethods.Merge(h.deniedMethods)
+	opts.http.allowedContentTypes.Merge(h.allowedContentTypes)
 }
 
 type validateHandler struct {
-	deniedMethods util.StringSet
-	next          http.Handler
+	deniedMethods       util.StringSet
+	allowedContentTypes util.StringSet
+	next                http.Handler
 }
 
 func (v *validateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// check method
 	if v.deniedMethods.Contains(strings.ToLower(r.Method)) {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	//TODO
-	fmt.Println(v.deniedMethods)
+	// check content length
+	if r.ContentLength > _maxReqContentLength {
+		http.Error(w, "content lentgth too large",
+			http.StatusRequestEntityTooLarge)
+		return
+	}
 
-	v.next.ServeHTTP(w, r)
+	// allow OPTIONS
+	if r.Method == http.MethodOptions {
+		v.next.ServeHTTP(w, r)
+		return
+	}
+
+	// check content type
+	if m, _, err := mime.ParseMediaType(r.Header.Get("content-type")); err == nil {
+		if v.allowedContentTypes.Contains(m) {
+			v.next.ServeHTTP(w, r)
+			return
+		}
+	}
+
+	http.Error(w, "invalid content type", http.StatusUnsupportedMediaType)
 }
 
 func newValidateHandler(opt *httpOpt, next http.Handler) http.Handler {
 	return &validateHandler{
-		deniedMethods: opt.deniedMethods,
-		next:          next,
+		deniedMethods:       opt.deniedMethods,
+		allowedContentTypes: opt.allowedContentTypes,
+		next:                next,
 	}
 }
 

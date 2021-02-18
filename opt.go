@@ -12,6 +12,10 @@ const (
 	_defRPCHost = "127.0.0.1"
 	_defRPCPort = 56789
 	_defIPCPath = "/var/run/anser.rpc"
+
+	_defAppJson    = "application/json"
+	_defAppJsonRpc = "application/json-rpc"
+	_defAppJsonReq = "application/jsonrequest"
 )
 
 type Option interface {
@@ -111,9 +115,25 @@ func WithLoggerOpt(logger Logger) Option {
 }
 
 func withDefaultHTTPOpt() *httpOpt {
+	vhosts := util.WithLowerStringSet([]string{
+		"localhost",
+	})
+
+	deniedMethods := util.WithLowerStringSet([]string{
+		http.MethodDelete,
+		http.MethodPut,
+	})
+
+	allowedContentTypes := util.WithLowerStringSet([]string{
+		_defAppJson,
+		_defAppJsonRpc,
+		_defAppJsonReq,
+	})
+
 	return &httpOpt{
-		vhosts:        util.WithLowerStringSet([]string{"localhost"}),
-		deniedMethods: util.WithLowerStringSet([]string{http.MethodDelete, http.MethodPut}),
+		vhosts:              vhosts,
+		deniedMethods:       deniedMethods,
+		allowedContentTypes: allowedContentTypes,
 	}
 }
 
