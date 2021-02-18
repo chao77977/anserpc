@@ -3,6 +3,7 @@ package anserpc
 import (
 	"context"
 	"fmt"
+	"io"
 	"mime"
 	"net"
 	"net/http"
@@ -117,6 +118,13 @@ func newVirtualHostHandler(opt *httpOpt, next http.Handler) http.Handler {
 	}
 }
 
+type httpServerConn struct {
+	io.Reader
+	io.Writer
+}
+
+func (h *httpServerConn) Close() error { return nil }
+
 type httpServer struct {
 	opt      *httpOpt
 	mu       sync.Mutex
@@ -212,6 +220,27 @@ func (h *httpServer) doStop() {
 }
 
 func (h *httpServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	//TODO:
-	fmt.Println("running...")
+	w.Header().Set("content-type", _defAppJson)
+
+	ctx := r.Context()
+	ctx = context.WithValue(ctx, "anser-remote", r.RemoteAddr)
+
+	conn := &httpServerConn{
+		Reader: io.LimitReader(r.Body, _maxReqContentLength),
+		Writer: w,
+	}
+
+	if err := h.serveRequest(ctx, newCodec(conn)); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func (h *httpServer) serveRequest(ctx context.Context, jCodec *jsonCodec) error {
+	// TODO:
+	_, _, err := jCodec.readBatch()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
