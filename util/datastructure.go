@@ -1,5 +1,9 @@
 package util
 
+import (
+	"strings"
+)
+
 var (
 	_exists = struct{}{}
 )
@@ -10,11 +14,11 @@ func NewStringSet() StringSet {
 	return make(StringSet)
 }
 
-func WithStringSet(ws []string) StringSet {
+func WithLowerStringSet(ws []string) StringSet {
 	ss := NewStringSet()
 	for _, s := range ws {
 		if s != "" {
-			ss.Add(s)
+			ss.Add(strings.ToLower(s))
 		}
 	}
 
@@ -50,4 +54,12 @@ func (s StringSet) List() []string {
 	}
 
 	return list
+}
+
+func (s StringSet) Merge(x StringSet) {
+	if x.Len() != 0 {
+		for _, v := range x.List() {
+			s.Add(v)
+		}
+	}
 }

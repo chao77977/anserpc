@@ -12,14 +12,36 @@ import (
 )
 
 type httpOpt struct {
-	vhosts []string
+	vhosts        util.StringSet
+	deniedMethods util.StringSet
 }
 
 func (h *httpOpt) apply(opts *options) {
-	if len(h.vhosts) != 0 {
-		for _, host := range h.vhosts {
-			opts.http.vhosts = append(opts.http.vhosts, host)
-		}
+	opts.http.vhosts.Merge(h.vhosts)
+	opts.http.deniedMethods.Merge(h.deniedMethods)
+}
+
+type validateHandler struct {
+	deniedMethods util.StringSet
+	next          http.Handler
+}
+
+func (v *validateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if v.deniedMethods.Contains(strings.ToLower(r.Method)) {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	//TODO
+	fmt.Println(v.deniedMethods)
+
+	v.next.ServeHTTP(w, r)
+}
+
+func newValidateHandler(opt *httpOpt, next http.Handler) http.Handler {
+	return &validateHandler{
+		deniedMethods: opt.deniedMethods,
+		next:          next,
 	}
 }
 
@@ -53,14 +75,9 @@ func (v *virtualHostHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "host access denied", http.StatusForbidden)
 }
 
-func newVirtualHostHandler(vhosts []string, next http.Handler) http.Handler {
-	vhs := util.NewStringSet()
-	for _, vhost := range vhosts {
-		vhs.Add(strings.ToLower(vhost))
-	}
-
+func newVirtualHostHandler(opt *httpOpt, next http.Handler) http.Handler {
 	return &virtualHostHandler{
-		vhosts: vhs,
+		vhosts: opt.vhosts,
 		next:   next,
 	}
 }
@@ -81,7 +98,8 @@ func newHttpServer(opt *httpOpt) *httpServer {
 		err: make(chan error),
 	}
 
-	server.head = newVirtualHostHandler(opt.vhosts, server)
+	server.head = newValidateHandler(opt, server)
+	server.head = newVirtualHostHandler(opt, server.head)
 	return server
 }
 

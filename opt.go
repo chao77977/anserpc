@@ -2,6 +2,10 @@ package anserpc
 
 import (
 	"fmt"
+	"net/http"
+	"strings"
+
+	"github.com/chao77977/anserpc/util"
 )
 
 const (
@@ -107,12 +111,15 @@ func WithLoggerOpt(logger Logger) Option {
 }
 
 func withDefaultHTTPOpt() *httpOpt {
-	return &httpOpt{}
+	return &httpOpt{
+		vhosts:        util.WithLowerStringSet([]string{"localhost"}),
+		deniedMethods: util.WithLowerStringSet([]string{http.MethodDelete, http.MethodPut}),
+	}
 }
 
 func WithHTTPVhostOpt(vhosts ...string) Option {
 	opt := &httpOpt{
-		vhosts: make([]string, 0),
+		vhosts: util.NewStringSet(),
 	}
 
 	for _, host := range vhosts {
@@ -120,7 +127,23 @@ func WithHTTPVhostOpt(vhosts ...string) Option {
 			continue
 		}
 
-		opt.vhosts = append(opt.vhosts, host)
+		opt.vhosts.Add(strings.ToLower(host))
+	}
+
+	return opt
+}
+
+func WithHTTPDeniedMethodOpt(methods ...string) Option {
+	opt := &httpOpt{
+		deniedMethods: util.NewStringSet(),
+	}
+
+	for _, method := range methods {
+		if method == "" {
+			continue
+		}
+
+		opt.deniedMethods.Add(strings.ToLower(method))
 	}
 
 	return opt
