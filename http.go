@@ -236,11 +236,16 @@ func (h *httpServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *httpServer) serveRequest(ctx context.Context, jCodec *jsonCodec) error {
-	// TODO:
-	_, _, err := jCodec.readBatch()
+	msgs, isBatch, err := jCodec.readBatch()
 	if err != nil {
-		return err
+		jCodec.writeTo(ctx, makeJSONErrorMessage(err))
+		return nil
 	}
+
+	_ = msgs
+	_ = isBatch
+
+	// TODO:
 
 	return nil
 }

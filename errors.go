@@ -4,20 +4,24 @@ import (
 	"fmt"
 )
 
+const (
+	_defErrCode = 32100
+)
+
 var (
-	ErrMethodNotFound = StatusError{
-		code: 32601,
+	_errMethodNotFound = StatusError{
+		code: 32101,
 		err:  "method not found",
 	}
 
-	ErrJSONContent = StatusError{
-		code: 32602,
-		err:  "invalid JSON content",
+	_errInvalidMessage = StatusError{
+		code: 32102,
+		err:  "invalid message",
 	}
 
-	ErrRequest = StatusError{
-		code: 32603,
-		err:  "invalid request",
+	_errJSONContent = StatusError{
+		code: 32103,
+		err:  "invalid JSON content",
 	}
 )
 
@@ -26,6 +30,14 @@ type StatusError struct {
 	err  string
 }
 
+func (s StatusError) ErrorCode() int {
+	return s.code
+}
+
+func (s StatusError) ErrorMessage() string {
+	return s.err
+}
+
 func (s StatusError) Error() string {
-	return fmt.Sprintf("err %d: %s", s.code, s.err)
+	return fmt.Sprintf("status error <%d>: %s", s.code, s.err)
 }
