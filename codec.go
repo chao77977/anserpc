@@ -16,7 +16,47 @@ type jsonMessage struct {
 	Method  string          `json:"method,omitempty"`
 	Params  json.RawMessage `json:"params,omitempty"`
 	ID      json.RawMessage `json:"id,omitempty"`
+	Result  json.RawMessage `json:"result,omitempty"`
 	Error   *jsonError      `json:"error,omitempty"`
+}
+
+func (m *jsonMessage) doValidate() error {
+	// TODO
+
+	return nil
+}
+
+func (m *jsonMessage) hasErr() bool {
+	return m.Error != nil
+}
+
+func (m *jsonMessage) errResponse(err error) *jsonMessage {
+	resp := makeJSONErrorMessage(err)
+	resp.ID = m.ID
+	return resp
+}
+
+func (m *jsonMessage) response(result interface{}) *jsonMessage {
+	b, err := json.Marshal(result)
+	if err != nil {
+		_xlog.Error("parse json error", "err", err)
+		return m.errResponse(_errJSONContent)
+	}
+
+	return &jsonMessage{
+		Version: m.Version,
+		ID:      m.ID,
+		Result:  b,
+	}
+}
+
+func (m *jsonMessage) String() string {
+	b, err := json.Marshal(m)
+	if err != nil {
+		return _errJSONContent.Error()
+	}
+
+	return string(b)
 }
 
 type jsonError struct {
