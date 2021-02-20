@@ -13,6 +13,7 @@ const (
 
 type jsonMessage struct {
 	Version string          `json:"jsonrpc,omitempty"`
+	Group   string          `json:"group,omitempty"`
 	Method  string          `json:"method,omitempty"`
 	Params  json.RawMessage `json:"params,omitempty"`
 	ID      json.RawMessage `json:"id,omitempty"`
@@ -63,6 +64,22 @@ type jsonError struct {
 	Code    int         `json:"code"`
 	Message string      `json:"message"`
 	Data    interface{} `json:"data,omitempty"`
+}
+
+func (j *jsonError) ErrorCode() int {
+	return j.Code
+}
+
+func (j *jsonError) Error() string {
+	return j.ErrorMessage()
+}
+
+func (j *jsonError) ErrorMessage() string {
+	return j.Message
+}
+
+func (j *jsonError) ErrorData() interface{} {
+	return j.Data
 }
 
 func makeJSONErrorMessage(err error) *jsonMessage {
@@ -132,7 +149,6 @@ func (j *jsonCodec) readBatch() ([]*jsonMessage, bool, error) {
 			return nil, isBatch, _errJSONContent
 		}
 
-		_xlog.Info("Decode message", "msg", msg)
 		msgs = append(msgs, &msg)
 	} else {
 		dec := json.NewDecoder(bytes.NewReader(rawMsg))
@@ -144,7 +160,6 @@ func (j *jsonCodec) readBatch() ([]*jsonMessage, bool, error) {
 				return nil, isBatch, _errJSONContent
 			}
 
-			_xlog.Info("Decode message", "msg", msg)
 			msgs = append(msgs, &msg)
 		}
 	}
