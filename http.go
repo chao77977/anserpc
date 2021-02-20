@@ -230,7 +230,10 @@ func (h *httpServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Writer: w,
 	}
 
-	if err := h.serveRequest(ctx, newCodec(conn)); err != nil {
+	jcodec := newCodec(conn)
+	defer jcodec.close()
+
+	if err := h.serveRequest(ctx, jcodec); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }

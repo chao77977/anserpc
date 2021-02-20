@@ -175,6 +175,13 @@ func (j *jsonCodec) writeTo(ctx context.Context, x interface{}) error {
 	return j.encode(x)
 }
 
+func (j *jsonCodec) close() {
+	j.closeOnce.Do(func() {
+		close(j.closeC)
+		j.conn.Close()
+	})
+}
+
 func newCodec(conn Conn) *jsonCodec {
 	enc := json.NewEncoder(conn)
 	dec := json.NewDecoder(conn)
