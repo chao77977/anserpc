@@ -26,6 +26,26 @@ func New(ops ...Option) *Anser {
 	}
 }
 
+func (a *Anser) Register(group, service, version string, public bool, receiver interface{}) {
+	a.RegisterWithAPI(&API{
+		Group:    group,
+		Service:  service,
+		Version:  version,
+		Public:   public,
+		Receiver: receiver,
+	})
+}
+
+func (a *Anser) RegisterWithGroup(name string) *groupRegister {
+	return newGroupRegister(name, a.sr)
+}
+
+func (a *Anser) RegisterWithAPI(apis ...*API) {
+	for _, api := range apis {
+		a.sr.registerWithAPI(api)
+	}
+}
+
 func (a *Anser) rpcAllowed() bool {
 	return a.opts.rpc != nil
 }

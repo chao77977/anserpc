@@ -15,6 +15,30 @@ var (
 	_errorType   = reflect.TypeOf((*error)(nil)).Elem()
 )
 
+type groupRegister struct {
+	grp *group
+	sr  *serviceRegistry
+}
+
+func newGroupRegister(name string, sr *serviceRegistry) *groupRegister {
+	return &groupRegister{
+		grp: sr.registerWithGroup(name),
+		sr:  sr,
+	}
+}
+
+func (g *groupRegister) Register(service, version string, public bool, receiver interface{}) {
+	g.sr.mu.Lock()
+	defer g.sr.mu.Unlock()
+
+	g.grp.registerWithAPI(&API{
+		Service:  service,
+		Version:  version,
+		Public:   public,
+		Receiver: receiver,
+	})
+}
+
 type serviceRegistry struct {
 	mu     sync.Mutex
 	groups map[string]*group
@@ -65,30 +89,38 @@ func newServiceRegistry() *serviceRegistry {
 	}
 
 	for _, api := range _builtInAPIs {
-		sr.register(api)
+		sr.registerWithAPI(api)
 	}
 
 	return sr
 }
 
-func (s *serviceRegistry) register(api *API) {
+func (s *serviceRegistry) registerWithGroup(name string) *group {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	srv, err := makeService(api.Service, api.Version,
-		api.Public, reflect.ValueOf(api.Receiver))
-	if err != nil {
-		_xlog.Warn("Failed to register service", "group", api.Group,
-			"service", api.Service, "service version", api.Version,
-			"err", err)
+	name = strings.ToLower(name)
+	if _, ok := s.groups[name]; !ok {
+		s.groups[name] = newGroup()
+	}
+
+	return s.groups[name]
+}
+
+func (s *serviceRegistry) registerWithAPI(api *API) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if api == nil {
 		return
 	}
 
-	if _, ok := s.groups[api.Group]; !ok {
-		s.groups[api.Group] = newGroup()
+	grp := strings.ToLower(api.Group)
+	if _, ok := s.groups[grp]; !ok {
+		s.groups[grp] = newGroup()
 	}
 
-	s.groups[api.Group].add(srv)
+	s.groups[grp].registerWithAPI(api)
 }
 
 type group struct {
@@ -99,6 +131,23 @@ func newGroup() *group {
 	return &group{
 		services: make([]*service, 0),
 	}
+}
+
+func (g *group) registerWithAPI(api *API) {
+	if api == nil {
+		return
+	}
+
+	srv, err := makeService(api.Service, api.Version,
+		api.Public, reflect.ValueOf(api.Receiver))
+	if err != nil {
+		_xlog.Warn("Failed to register service", "group", api.Group,
+			"service", api.Service, "service version", api.Version,
+			"err", err)
+		return
+	}
+
+	g.add(srv)
 }
 
 func (g *group) load(s *service) *service {
@@ -162,7 +211,7 @@ func makeService(name, version string, public bool, rcvr reflect.Value) (*servic
 	}
 
 	return &service{
-		name:      name,
+		name:      strings.ToLower(name),
 		version:   version,
 		callbacks: cbs,
 		public:    public,
