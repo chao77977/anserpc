@@ -123,6 +123,29 @@ func (s *serviceRegistry) registerWithAPI(api *API) {
 	s.groups[grp].registerWithAPI(api)
 }
 
+func (s *serviceRegistry) callback(grpName, srvName, version, method string) *callback {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	grp, ok := s.groups[strings.ToLower(grpName)]
+	if !ok {
+		return nil
+	}
+
+	srvName = strings.ToLower(srvName)
+	srv := grp.load(&service{
+		name:    srvName,
+		version: version,
+	})
+
+	if srv.name != srvName || !srv.public {
+		return nil
+	}
+
+	cb, _ := srv.callbacks[method]
+	return cb
+}
+
 type group struct {
 	services []*service
 }

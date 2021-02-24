@@ -126,6 +126,7 @@ type httpServerConn struct {
 func (h *httpServerConn) Close() error { return nil }
 
 type httpServer struct {
+	sr       *serviceRegistry
 	opt      *httpOpt
 	mu       sync.Mutex
 	listener net.Listener
@@ -135,8 +136,9 @@ type httpServer struct {
 	head     http.Handler
 }
 
-func newHttpServer(opt *httpOpt) *httpServer {
+func newHttpServer(opt *httpOpt, sr *serviceRegistry) *httpServer {
 	server := &httpServer{
+		sr:  sr,
 		opt: opt,
 		err: make(chan error),
 	}

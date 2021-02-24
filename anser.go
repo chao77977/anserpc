@@ -66,7 +66,7 @@ func (a *Anser) enableRPCServer() error {
 	a.rpcMu.Lock()
 	defer a.rpcMu.Unlock()
 
-	a.rpcServer = newHttpServer(a.opts.http)
+	a.rpcServer = newHttpServer(a.opts.http, a.sr)
 	a.rpcErr = a.rpcServer.setListenAddr(a.opts.rpc)
 	if a.rpcErr != nil {
 		return a.rpcErr
