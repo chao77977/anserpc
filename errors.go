@@ -9,9 +9,9 @@ const (
 )
 
 var (
-	_errMethodNotFound = StatusError{
+	_errInternal = StatusError{
 		code: 32101,
-		err:  "method not found",
+		err:  "internal error",
 	}
 
 	_errInvalidMessage = StatusError{
@@ -22,6 +22,26 @@ var (
 	_errJSONContent = StatusError{
 		code: 32103,
 		err:  "invalid JSON content",
+	}
+
+	_errServiceNameOrVersion = StatusError{
+		code: 32104,
+		err:  "service name or version not found",
+	}
+
+	_errMethodNotFound = StatusError{
+		code: 32105,
+		err:  "method not found",
+	}
+
+	_errResultErrorNotFound = StatusError{
+		code: 32106,
+		err:  "error of return result not found",
+	}
+
+	_errNumOfResult = StatusError{
+		code: 32107,
+		err:  "too many return results",
 	}
 )
 

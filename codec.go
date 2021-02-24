@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	_defVersion = "2.0"
+	_defJsonRpcVersion = "2.0"
 )
 
 type jsonMessage struct {
@@ -84,7 +84,7 @@ func (j *jsonError) ErrorData() interface{} {
 
 func makeJSONErrorMessage(err error) *jsonMessage {
 	msg := &jsonMessage{
-		Version: _defVersion,
+		Version: _defJsonRpcVersion,
 		Error: &jsonError{
 			Code: _defErrCode,
 		},

@@ -8,6 +8,7 @@ type Anser struct {
 	opts *options
 	wg   sync.WaitGroup
 
+	sr        *serviceRegistry
 	rpcServer *httpServer
 	rpcMu     sync.Mutex
 	rpcErr    error
@@ -21,6 +22,7 @@ func New(ops ...Option) *Anser {
 
 	return &Anser{
 		opts: opts,
+		sr:   newServiceRegistry(),
 	}
 }
 
@@ -73,6 +75,10 @@ func (a *Anser) disableRPCServer() {
 
 func (a *Anser) Run() {
 	newSafeLogger(a.opts.log)
+
+	if a.sr != nil {
+		_xlog.Info("Register services\n" + a.sr.modules())
+	}
 
 	if a.rpcAllowed() {
 		if err := a.enableRPCServer(); err != nil {
