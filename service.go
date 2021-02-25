@@ -178,6 +178,10 @@ func (g *group) load(s *service) *service {
 		return bytes.Compare(g.services[i].fingerprint(), s.fingerprint()) >= 0
 	})
 
+	if i >= len(g.services) {
+		i = len(g.services) - 1
+	}
+
 	return g.services[i]
 }
 

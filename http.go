@@ -247,24 +247,24 @@ func (h *httpServer) serveRequest(ctx context.Context, jCodec *jsonCodec) error 
 		return nil
 	}
 
-	if !isBatch {
-		msgH := newHandler(h.sr, ctx)
-		defer msgH.close()
+	msgHdl := newHandler(h.sr, ctx)
+	defer msgHdl.close()
 
-		jCodec.writeTo(ctx, msgH.handleMsg(msgs[0]))
+	if !isBatch {
+		jCodec.writeTo(ctx, msgHdl.handleMsg(msgs[0]))
 		return nil
 	}
 
-	i := 0
-	respMsgs := make([]*jsonMessage, len(msgs))
-	for _, msg := range msgs {
-		msgH := newHandler(h.sr, ctx)
-		defer msgH.close()
+	//i := 0
+	//respMsgs := make([]*jsonMessage, len(msgs))
+	//for _, msg := range msgs {
+	//msgH := newHandler(h.sr, ctx)
+	//defer msgH.close()
 
-		respMsgs[i] = msgH.handleMsg(msg)
-		i++
-	}
+	//respMsgs[i] = msgH.handleMsg(msg)
+	//i++
+	//}
 
-	jCodec.writeTo(ctx, respMsgs)
+	//jCodec.writeTo(ctx, respMsgs)
 	return nil
 }

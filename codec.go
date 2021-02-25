@@ -14,6 +14,7 @@ const (
 type jsonMessage struct {
 	Version string          `json:"jsonrpc,omitempty"`
 	Group   string          `json:"group,omitempty"`
+	Service string          `json:"service,omitempty"`
 	Method  string          `json:"method,omitempty"`
 	Params  json.RawMessage `json:"params,omitempty"`
 	ID      json.RawMessage `json:"id,omitempty"`
