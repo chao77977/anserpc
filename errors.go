@@ -43,6 +43,11 @@ var (
 		code: 32107,
 		err:  "too many return results",
 	}
+
+	_errMethodCrashed = StatusError{
+		code: 32108,
+		err:  "method running crash",
+	}
 )
 
 type StatusError struct {

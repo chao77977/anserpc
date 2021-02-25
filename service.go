@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/chao77977/anserpc/util"
 )
 
 var (
@@ -99,7 +101,7 @@ func (s *serviceRegistry) registerWithGroup(name string) *group {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	name = strings.ToLower(name)
+	name = util.FormatName(name)
 	if _, ok := s.groups[name]; !ok {
 		s.groups[name] = newGroup()
 	}
@@ -115,7 +117,7 @@ func (s *serviceRegistry) registerWithAPI(api *API) {
 		return
 	}
 
-	grp := strings.ToLower(api.Group)
+	grp := util.FormatName(api.Group)
 	if _, ok := s.groups[grp]; !ok {
 		s.groups[grp] = newGroup()
 	}
@@ -127,12 +129,12 @@ func (s *serviceRegistry) callback(grpName, srvName, version, method string) *ca
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	grp, ok := s.groups[strings.ToLower(grpName)]
+	grp, ok := s.groups[util.FormatName(grpName)]
 	if !ok {
 		return nil
 	}
 
-	srvName = strings.ToLower(srvName)
+	srvName = util.FormatName(srvName)
 	srv := grp.load(&service{
 		name:    srvName,
 		version: version,
@@ -238,7 +240,7 @@ func makeService(name, version string, public bool, rcvr reflect.Value) (*servic
 	}
 
 	return &service{
-		name:      strings.ToLower(name),
+		name:      util.FormatName(name),
 		version:   version,
 		callbacks: cbs,
 		public:    public,
