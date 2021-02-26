@@ -20,10 +20,13 @@ func New(ops ...Option) *Anser {
 		o.apply(opts)
 	}
 
-	return &Anser{
+	a := &Anser{
 		opts: opts,
 		sr:   newServiceRegistry(),
 	}
+
+	newSafeLogger(a.opts.log)
+	return a
 }
 
 func (a *Anser) Register(group, service, version string, public bool, receiver interface{}) {
@@ -94,7 +97,6 @@ func (a *Anser) disableRPCServer() {
 }
 
 func (a *Anser) Run() {
-	newSafeLogger(a.opts.log)
 
 	if a.sr != nil {
 		_xlog.Info("Register services\n" + a.sr.modules())
