@@ -33,19 +33,19 @@ func (h *handler) handleMsg(msg *jsonMessage) *jsonMessage {
 		return msg.errResponse(_errMethodNotFound)
 	}
 
-	// check args's type
 	args, err := msg.retrieveArgs(cb.argTypes)
 	if err != nil {
 		return msg.errResponse(err)
 	}
 
-	Dump(args)
-
-	return nil
-
 	msgC := make(chan *jsonMessage)
-	go func(c chan *jsonMessage) {
+	go func(c chan<- *jsonMessage) {
+		r, err := h.call(cb, msg.Method, args)
+		if err != nil {
+			c <- msg.errResponse(err)
+		}
 
+		c <- msg.response(r)
 	}(msgC)
 
 	// TODO: timeout
