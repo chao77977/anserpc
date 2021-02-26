@@ -140,7 +140,7 @@ func (s *serviceRegistry) callback(grpName, srvName, version, method string) *ca
 		version: version,
 	})
 
-	if srv.name != srvName || !srv.public {
+	if srv == nil || srv.name != srvName || !srv.public {
 		return nil
 	}
 
@@ -176,12 +176,17 @@ func (g *group) registerWithAPI(api *API) {
 }
 
 func (g *group) load(s *service) *service {
-	i := sort.Search(len(g.services), func(i int) bool {
+	l := len(g.services)
+	if l == 0 {
+		return nil
+	}
+
+	i := sort.Search(l, func(i int) bool {
 		return bytes.Compare(g.services[i].fingerprint(), s.fingerprint()) >= 0
 	})
 
-	if i >= len(g.services) {
-		i = len(g.services) - 1
+	if i >= l {
+		i = l - 1
 	}
 
 	return g.services[i]
