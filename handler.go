@@ -23,21 +23,33 @@ func (h *handler) close() {}
 
 func (h *handler) handleMsg(msg *jsonMessage) *jsonMessage {
 	if err := msg.doValidate(); err != nil {
-		return makeJSONErrorMessage(err)
+		return msg.errResponse(err)
 	}
 
 	cb := h.sr.callback(msg.Group, msg.Service, "", msg.Method)
 	if cb == nil {
 		_xlog.Error("Callback method not found or not available",
 			"group", msg.Group, "service", msg.Service, "method", msg.Method)
-		return makeJSONErrorMessage(_errMethodNotFound)
+		return msg.errResponse(_errMethodNotFound)
 	}
 
 	// check args's type
+	args, err := msg.retrieveArgs(cb.argTypes)
+	if err != nil {
+		return msg.errResponse(err)
+	}
 
-	// TODO
-	//msg := make(chan *jsonMessage)
+	Dump(args)
+
 	return nil
+
+	msgC := make(chan *jsonMessage)
+	go func(c chan *jsonMessage) {
+
+	}(msgC)
+
+	// TODO: timeout
+	return <-msgC
 }
 
 func (h *handler) call(cb *callback, method string, args []reflect.Value) (result interface{}, err error) {

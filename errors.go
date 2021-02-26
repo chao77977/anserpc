@@ -48,6 +48,21 @@ var (
 		code: 32108,
 		err:  "method running crash",
 	}
+
+	_errInvalidParams = StatusError{
+		code: 32109,
+		err:  "invalid params message",
+	}
+
+	_errTooManyParams = StatusError{
+		code: 32110,
+		err:  "too many params",
+	}
+
+	_errMissingValueParams = StatusError{
+		code: 32111,
+		err:  "missing value for params",
+	}
 )
 
 type StatusError struct {

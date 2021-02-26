@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io"
+	"reflect"
 	"sync"
 )
 
@@ -59,6 +61,63 @@ func (m *jsonMessage) String() string {
 	}
 
 	return string(b)
+}
+
+func zeroArgs(args []reflect.Value, types []reflect.Type) ([]reflect.Value, error) {
+	for i := len(args); i < len(types); i++ {
+		if types[i].Kind() != reflect.Ptr {
+			return nil, _errMissingValueParams
+		}
+
+		args = append(args, reflect.Zero(types[i]))
+	}
+
+	return args, nil
+}
+
+func (m *jsonMessage) retrieveArgs(types []reflect.Type) ([]reflect.Value, error) {
+	args := make([]reflect.Value, 0, len(types))
+	dec := json.NewDecoder(bytes.NewReader(m.Params))
+	tok, err := dec.Token()
+	if err == io.EOF || tok == nil && err == nil {
+		return zeroArgs(args, types)
+	}
+
+	if err != nil {
+		_xlog.Error("Invalid params message", "err", err)
+		return nil, _errInvalidParams
+	}
+
+	if tok != nil && tok != json.Delim('[') {
+		_xlog.Error("Non-array params")
+		return nil, _errInvalidParams
+	}
+
+	for i := 0; dec.More(); i++ {
+		if i > len(types) {
+			return nil, _errTooManyParams
+		}
+
+		v := reflect.New(types[i])
+		if err := dec.Decode(v.Interface()); err != nil {
+			_xlog.Error("Invalid params message", "err", err)
+			return nil, _errInvalidParams
+		}
+
+		if v.IsNil() && types[i].Kind() != reflect.Ptr {
+			return nil, _errMissingValueParams
+		}
+
+		args = append(args, v.Elem())
+	}
+
+	_, err = dec.Token()
+	if err != nil {
+		_xlog.Error("Invalid params message", "err", err)
+		return nil, _errInvalidParams
+	}
+
+	return zeroArgs(args, types)
 }
 
 type jsonError struct {
