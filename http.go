@@ -247,6 +247,8 @@ func (h *httpServer) serveRequest(ctx context.Context, jCodec *jsonCodec) error 
 		return nil
 	}
 
+	// TODO: len(msgs) == 0 ??
+
 	msgHdl := newHandler(h.sr, ctx)
 	defer msgHdl.close()
 
@@ -255,16 +257,6 @@ func (h *httpServer) serveRequest(ctx context.Context, jCodec *jsonCodec) error 
 		return nil
 	}
 
-	//i := 0
-	//respMsgs := make([]*jsonMessage, len(msgs))
-	//for _, msg := range msgs {
-	//msgH := newHandler(h.sr, ctx)
-	//defer msgH.close()
-
-	//respMsgs[i] = msgH.handleMsg(msg)
-	//i++
-	//}
-
-	//jCodec.writeTo(ctx, respMsgs)
+	jCodec.writeTo(ctx, msgHdl.handleMsgs(msgs))
 	return nil
 }

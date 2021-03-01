@@ -63,6 +63,11 @@ var (
 		code: 32111,
 		err:  "missing value for params",
 	}
+
+	_errHandleTimeout = StatusError{
+		code: 32112,
+		err:  "handling message timeout",
+	}
 )
 
 type StatusError struct {
