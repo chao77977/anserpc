@@ -1,5 +1,10 @@
 package anserpc
 
+/*
+  The anserpc library is free software: you can redistribute it
+  and/or modify it under the terms of the Apache License.
+*/
+
 import (
 	"sync"
 )
@@ -30,7 +35,7 @@ func New(ops ...Option) *Anser {
 }
 
 func (a *Anser) Register(group, service, version string, public bool, receiver interface{}) {
-	a.RegisterWithAPI(&API{
+	a.RegisterAPI(&API{
 		Group:    group,
 		Service:  service,
 		Version:  version,
@@ -43,7 +48,11 @@ func (a *Anser) RegisterWithGroup(name string) *groupRegister {
 	return newGroupRegister(name, a.sr)
 }
 
-func (a *Anser) RegisterWithAPI(apis ...*API) {
+func (a *Anser) RegisterService(name, version string, public bool, receiver interface{}) {
+	a.Register("", name, version, public, receiver)
+}
+
+func (a *Anser) RegisterAPI(apis ...*API) {
 	for _, api := range apis {
 		a.sr.registerWithAPI(api)
 	}
@@ -99,7 +108,7 @@ func (a *Anser) disableRPCServer() {
 func (a *Anser) Run() {
 
 	if a.sr != nil {
-		_xlog.Info("Register services\n" + a.sr.modules())
+		_xlog.Info("Anserpc registered services\n" + a.sr.modules())
 	}
 
 	if a.rpcAllowed() {

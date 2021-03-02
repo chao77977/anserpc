@@ -220,7 +220,11 @@ type service struct {
 }
 
 func (s service) fingerprint() []byte {
-	return []byte(s.name + "_" + s.version)
+	r := s.name
+	if s.version != "" {
+		r = r + "_" + s.version
+	}
+	return []byte(r)
 }
 
 func (s *service) methods() []string {
@@ -235,8 +239,8 @@ func (s *service) methods() []string {
 }
 
 func makeService(name, version string, public bool, rcvr reflect.Value) (*service, error) {
-	if name == "" || version == "" {
-		return nil, _errServiceOrVersion
+	if name == "" {
+		return nil, _errServiceNotFound
 	}
 
 	cbs, err := makeCallbacks(rcvr)

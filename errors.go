@@ -49,9 +49,9 @@ var (
 		err:  "service or method not found",
 	}
 
-	_errServiceOrVersion = StatusError{
+	_errServiceNotFound = StatusError{
 		code: -32003,
-		err:  "service name or version not found",
+		err:  "service not found",
 	}
 
 	_errResultErrorNotFound = StatusError{
