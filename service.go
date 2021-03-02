@@ -236,7 +236,7 @@ func (s *service) methods() []string {
 
 func makeService(name, version string, public bool, rcvr reflect.Value) (*service, error) {
 	if name == "" || version == "" {
-		return nil, _errServiceNameOrVersion
+		return nil, _errServiceOrVersion
 	}
 
 	cbs, err := makeCallbacks(rcvr)

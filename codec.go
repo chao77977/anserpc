@@ -25,7 +25,13 @@ type jsonMessage struct {
 }
 
 func (m *jsonMessage) doValidate() error {
-	// TODO
+	if m.Version != _defJsonRpcVersion {
+		return _errProtoVersion
+	}
+
+	if m.Service == "" || m.Method == "" {
+		return _errProtoServiceOrMethodNotFound
+	}
 
 	return nil
 }
@@ -84,12 +90,10 @@ func (m *jsonMessage) retrieveArgs(types []reflect.Type) ([]reflect.Value, error
 	}
 
 	if err != nil {
-		_xlog.Error("Invalid params message", "err", err)
 		return nil, _errInvalidParams
 	}
 
 	if tok != nil && tok != json.Delim('[') {
-		_xlog.Error("Non-array params")
 		return nil, _errInvalidParams
 	}
 
@@ -100,7 +104,6 @@ func (m *jsonMessage) retrieveArgs(types []reflect.Type) ([]reflect.Value, error
 
 		v := reflect.New(types[i])
 		if err := dec.Decode(v.Interface()); err != nil {
-			_xlog.Error("Invalid params message", "err", err)
 			return nil, _errInvalidParams
 		}
 
@@ -113,7 +116,6 @@ func (m *jsonMessage) retrieveArgs(types []reflect.Type) ([]reflect.Value, error
 
 	_, err = dec.Token()
 	if err != nil {
-		_xlog.Error("Invalid params message", "err", err)
 		return nil, _errInvalidParams
 	}
 
@@ -158,11 +160,13 @@ func makeJSONErrorMessage(err error) *jsonMessage {
 		msg.Error.Code = e.ErrorCode()
 		msg.Error.Message = e.ErrorMessage()
 		msg.Error.Data = e.ErrorData()
+	} else if e, ok := err.(ResultDataError); ok {
+		msg.Error.Code = e.ErrorCode()
+		msg.Error.Message = e.Error()
+		msg.Error.Data = e.ErrorData()
 	} else if e, ok := err.(ResultCodeError); ok {
 		msg.Error.Code = e.ErrorCode()
-		msg.Error.Message = e.ErrorMessage()
-	} else if e, ok := err.(ResultDataError); ok {
-		msg.Error.Data = e.ErrorData()
+		msg.Error.Message = e.Error()
 	} else {
 		msg.Error.Message = err.Error()
 	}

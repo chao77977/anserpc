@@ -24,48 +24,58 @@ var (
 		err:  "invalid JSON content",
 	}
 
-	_errServiceNameOrVersion = StatusError{
+	_errProtoVersion = StatusError{
 		code: 32104,
+		err:  "invalid version",
+	}
+
+	_errProtoServiceOrMethodNotFound = StatusError{
+		code: 32105,
+		err:  "service or method not found",
+	}
+
+	_errServiceOrVersion = StatusError{
+		code: 32201,
 		err:  "service name or version not found",
 	}
 
 	_errMethodNotFound = StatusError{
-		code: 32105,
+		code: 32202,
 		err:  "method not found",
 	}
 
 	_errResultErrorNotFound = StatusError{
-		code: 32106,
+		code: 32203,
 		err:  "error of return result not found",
 	}
 
 	_errNumOfResult = StatusError{
-		code: 32107,
+		code: 32204,
 		err:  "too many return results",
 	}
 
 	_errMethodCrashed = StatusError{
-		code: 32108,
+		code: 32301,
 		err:  "method running crash",
 	}
 
 	_errInvalidParams = StatusError{
-		code: 32109,
+		code: 32302,
 		err:  "invalid params message",
 	}
 
 	_errTooManyParams = StatusError{
-		code: 32110,
+		code: 32303,
 		err:  "too many params",
 	}
 
 	_errMissingValueParams = StatusError{
-		code: 32111,
+		code: 32304,
 		err:  "missing value for params",
 	}
 
 	_errHandleTimeout = StatusError{
-		code: 32112,
+		code: 32401,
 		err:  "handling message timeout",
 	}
 )
