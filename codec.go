@@ -186,8 +186,8 @@ type jsonCodec struct {
 func (j *jsonCodec) readBatch() ([]*jsonMessage, bool, error) {
 	var rawMsg json.RawMessage
 	if err := j.decode(&rawMsg); err != nil {
-		_xlog.Error("parse error", "err", err)
-		return nil, false, _errInvalidMessage
+		_xlog.Debug("invalid request", "err", err)
+		return nil, false, _errInvalidRequest
 	}
 
 	isBatch := false
