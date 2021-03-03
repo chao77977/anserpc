@@ -7,12 +7,14 @@ package anserpc
 
 import (
 	"sync"
+	"sync/atomic"
 )
 
 type Anser struct {
 	opts *options
 	wg   sync.WaitGroup
 
+	nRunning  uint64
 	sr        *serviceRegistry
 	rpcServer *httpServer
 	rpcMu     sync.Mutex
@@ -90,6 +92,7 @@ func (a *Anser) enableRPCServer() error {
 	}
 
 	a.startToWait(a.rpcServer)
+	atomic.AddUint64(&a.nRunning, 1)
 
 	return nil
 }
@@ -106,24 +109,35 @@ func (a *Anser) disableRPCServer() {
 }
 
 func (a *Anser) Run() {
-
-	if a.sr != nil {
-		_xlog.Info("Anserpc registered services\n" + a.sr.modules())
-	}
-
 	if a.rpcAllowed() {
 		if err := a.enableRPCServer(); err != nil {
 			a.disableRPCServer()
 		}
 	}
 
+	a.status()
 	a.wg.Wait()
 
 	if a.rpcErr != nil {
-		_xlog.Error("RPC server is stopped", "err", a.rpcErr)
+		_xlog.Error("HTTP server is stopped", "err", a.rpcErr)
 	}
 
-	_xlog.Info("AnserRPC Service is down")
+	_xlog.Info("Application is down")
+}
+
+func (a *Anser) status() {
+	if a.sr != nil {
+		_xlog.Info("Application registered services:\n" + a.sr.modules())
+	}
+
+	_xlog.Info(Fmt("Application: running using %d server(s)",
+		atomic.LoadUint64(&a.nRunning)))
+
+	//a.rpc.Server.listenAddr()
+	// Host: addr is :2001
+	if a.rpcServer != nil && a.rpcServer.isRunning() {
+		_xlog.Info("HTTP server addr is " + a.rpcServer.listenAddr())
+	}
 }
 
 func (a *Anser) Close() {

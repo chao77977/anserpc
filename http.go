@@ -172,6 +172,13 @@ func (h *httpServer) listenAddr() string {
 	return h.endpoint.String()
 }
 
+func (h *httpServer) isRunning() bool {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	return h.listener != nil
+}
+
 func (h *httpServer) start() error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -190,8 +197,6 @@ func (h *httpServer) start() error {
 	h.server = &http.Server{Handler: h.head}
 
 	go h.serve()
-	_xlog.Info("HTTP Server is running on " + h.endpoint.String())
-
 	return nil
 }
 

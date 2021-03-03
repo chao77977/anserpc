@@ -2,6 +2,12 @@ package anserpc
 
 import (
 	"io"
+
+	"github.com/chao77977/anserpc/util"
+)
+
+var (
+	Fmt = util.Fmt
 )
 
 type waitProc interface {
