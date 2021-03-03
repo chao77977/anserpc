@@ -126,8 +126,11 @@ func (a *Anser) Run() {
 }
 
 func (a *Anser) status() {
-	if a.sr != nil {
-		_xlog.Info("Application registered services:\n" + a.sr.modules())
+	if a.sr != nil && a.sr.modules() != nil {
+		_xlog.Info("Application registered services:")
+		for _, m := range a.sr.modules() {
+			_xlog.Info(m)
+		}
 	}
 
 	_xlog.Info(Fmt("Application: running using %d server(s)",

@@ -5,7 +5,6 @@ import (
 	"context"
 	"reflect"
 	"sort"
-	"strconv"
 	"strings"
 	"sync"
 
@@ -46,43 +45,49 @@ type serviceRegistry struct {
 	groups map[string]*group
 }
 
-func (s *serviceRegistry) modules() string {
+func (s *serviceRegistry) modules() []string {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	builder := strings.Builder{}
+	var results []string
 
-	i := 0
-	names := make([]string, len(s.groups))
+	names := make([]string, 0, len(s.groups))
 	for name := range s.groups {
-		names[i] = name
-		i++
+		names = append(names, name)
 	}
 
 	sort.Strings(names)
 	for _, name := range names {
-		if name != "" {
-			builder.WriteString("[Group=" + name + "]\n")
-		} else {
-			builder.WriteString("[Group]\n")
-		}
-
 		if s.groups[name] == nil || len(s.groups[name].services) == 0 {
 			continue
 		}
 
 		for _, service := range s.groups[name].services {
-			builder.WriteString(" service=")
-			builder.WriteString(string(service.fingerprint()))
-			builder.WriteString(" public=")
-			builder.WriteString(strconv.FormatBool(service.public))
-			builder.WriteString(" methods=")
-			builder.WriteString(strings.Join(service.methods(), " "))
-			builder.WriteString("\n")
+			if service == nil {
+				continue
+			}
+
+			//builder.WriteString(strconv.FormatBool(service.public))
+			for _, method := range service.methods() {
+				builder := strings.Builder{}
+				if name != "" {
+					builder.WriteString(name)
+					builder.WriteString(": ")
+				}
+
+				builder.WriteString(string(service.fingerprint()))
+				if service.public {
+					builder.WriteString("(public)")
+				}
+
+				builder.WriteString(" -> ")
+				builder.WriteString(method)
+				results = append(results, builder.String())
+			}
 		}
 	}
 
-	return builder.String()
+	return results
 }
 
 func newServiceRegistry() *serviceRegistry {
