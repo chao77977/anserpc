@@ -77,7 +77,8 @@ func (a *Anser) interruptHandle() {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	if a.opts.intrpt != nil && a.opts.intrpt.disableInterruptHandler {
+	if a.opts.intrpt == nil || a.opts.intrpt != nil &&
+		!a.opts.intrpt.disableInterruptHandler {
 		util.RegisterOnInterrupt(a.Close)
 	}
 }
@@ -185,7 +186,7 @@ func (a *Anser) status() {
 		}
 	}
 
-	if a.opts.intrpt != nil && a.opts.intrpt.disableInterruptHandler {
+	if a.opts.intrpt != nil && !a.opts.intrpt.disableInterruptHandler {
 		_xlog.Info("Server(s) shutdown on interrupt(CTRL+C)")
 	}
 

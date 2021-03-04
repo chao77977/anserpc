@@ -1,18 +1,35 @@
 # anserpc - A Light JSON2.0 RPC Lib
+Anser cygnoides (Chinese name 鸿雁), that is Swan Goose. Anserpc is matching
+JSON-RPC 2.0 specification, providing a lib to develop server application easily.
 
+## Install
+```
+$ go get github.com/chao77977/anserpc
 
-## Quick Sample
+```
+
+## Quick Sample: RPC on HTTP
 ```
 app := anserpc.New(
     anserpc.WithRPCEndpoint("0.0.0.0", 56789),
-    anserpc.WithDisableInterruptHandler(),
 )
 
+// register service
 app.Register("system", "network", "1.0", true, &network{})
 app.Register("system", "storage", "1.0", false, &storage{})
+
 app.Run()
 ```
+### New an application
+Some options as the following,
+* anserpc.WithRPCEndpoint(host string, port int)
+* anserpc.WithIPCEndpoint(path string)
+* anserpc.WithLogFileOpt(path string, filterLvl logLvl)
+* anserpc.WithHTTPVhostOpt(vhosts ...string)
+* anserpc.WithHTTPDeniedMethodOpt(methods ...string)
+* anserpc.WithDisableInterruptHandler()
 
+### Register services
 
 ```
 type network struct{}
