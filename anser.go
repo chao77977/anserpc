@@ -149,7 +149,7 @@ func (a *Anser) Run() {
 	a.wg.Wait()
 
 	if a.rpcErr != nil {
-		_xlog.Error("HTTP server is stopped", "err", a.rpcErr)
+		_xlog.Debug("HTTP server is stopped", "err", a.rpcErr)
 	}
 
 	_xlog.Info("Application is down")
@@ -161,8 +161,8 @@ func (a *Anser) status() {
 
 	if a.sr != nil && a.sr.modules() != nil {
 		_xlog.Info("Application register service(s):")
-		for _, m := range a.sr.modules() {
-			_xlog.Info(m)
+		for _, module := range a.sr.modules() {
+			_xlog.Info(module)
 		}
 	}
 
