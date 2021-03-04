@@ -10,6 +10,8 @@ var (
 	Fmt = util.Fmt
 )
 
+type serverStatus int
+
 type waitProc interface {
 	wait() error
 	stop()

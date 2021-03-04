@@ -6,13 +6,22 @@ package anserpc
 */
 
 import (
+	"strings"
 	"sync"
 	"sync/atomic"
+
+	"github.com/chao77977/anserpc/util"
+)
+
+const (
+	_statRunning serverStatus = iota + 1
+	_statStopped
 )
 
 type Anser struct {
 	opts *options
 	wg   sync.WaitGroup
+	mu   sync.Mutex
 
 	nRunning  uint64
 	sr        *serviceRegistry
@@ -64,6 +73,15 @@ func (a *Anser) rpcAllowed() bool {
 	return a.opts.rpc != nil
 }
 
+func (a *Anser) interruptHandle() {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	if a.opts.intrpt != nil && a.opts.intrpt.disableInterruptHandler {
+		util.RegisterOnInterrupt(a.Close)
+	}
+}
+
 func (a *Anser) startToWait(wp waitProc) {
 	a.wg.Add(1)
 	go func() {
@@ -74,6 +92,17 @@ func (a *Anser) startToWait(wp waitProc) {
 
 		a.rpcErr = wp.wait()
 	}()
+}
+
+func (a *Anser) statusRPCServer() serverStatus {
+	a.rpcMu.Lock()
+	defer a.rpcMu.Unlock()
+
+	if a.rpcServer != nil && a.rpcServer.isRunning() {
+		return _statRunning
+	}
+
+	return _statStopped
 }
 
 func (a *Anser) enableRPCServer() error {
@@ -109,7 +138,8 @@ func (a *Anser) disableRPCServer() {
 }
 
 func (a *Anser) Run() {
-	if a.rpcAllowed() {
+	a.interruptHandle()
+	if a.rpcAllowed() && a.statusRPCServer() != _statRunning {
 		if err := a.enableRPCServer(); err != nil {
 			a.disableRPCServer()
 		}
@@ -126,8 +156,11 @@ func (a *Anser) Run() {
 }
 
 func (a *Anser) status() {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
 	if a.sr != nil && a.sr.modules() != nil {
-		_xlog.Info("Application registered services:")
+		_xlog.Info("Application register service(s):")
 		for _, m := range a.sr.modules() {
 			_xlog.Info(m)
 		}
@@ -136,11 +169,27 @@ func (a *Anser) status() {
 	_xlog.Info(Fmt("Application: running using %d server(s)",
 		atomic.LoadUint64(&a.nRunning)))
 
-	//a.rpc.Server.listenAddr()
-	// Host: addr is :2001
-	if a.rpcServer != nil && a.rpcServer.isRunning() {
-		_xlog.Info("HTTP server addr is " + a.rpcServer.listenAddr())
+	if a.statusRPCServer() == _statRunning {
+		_xlog.Info("HTTP: addr is " + a.rpcServer.listenAddr())
 	}
+
+	if a.opts.http != nil {
+		for _, host := range a.opts.http.vhosts.List() {
+			_xlog.Info("HTTP: virtual host is " + host)
+		}
+
+		methods := a.opts.http.deniedMethods.List()
+		if len(methods) != 0 {
+			_xlog.Info("HTTP: denied method(s): " +
+				strings.ToUpper(strings.Join(methods, "/")))
+		}
+	}
+
+	if a.opts.intrpt != nil && a.opts.intrpt.disableInterruptHandler {
+		_xlog.Info("Server(s) shutdown on interrupt(CTRL+C)")
+	}
+
+	_xlog.Info("Application started")
 }
 
 func (a *Anser) Close() {

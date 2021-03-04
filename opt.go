@@ -23,10 +23,11 @@ type Option interface {
 }
 
 type options struct {
-	rpc  *rpcEndpoint
-	ipc  ipcEndpoint
-	log  *logOpt
-	http *httpOpt
+	rpc    *rpcEndpoint
+	ipc    ipcEndpoint
+	log    *logOpt
+	http   *httpOpt
+	intrpt *interruptOpt
 }
 
 func defaultOpt() *options {
@@ -167,4 +168,18 @@ func WithHTTPDeniedMethodOpt(methods ...string) Option {
 	}
 
 	return opt
+}
+
+type interruptOpt struct {
+	disableInterruptHandler bool
+}
+
+func (i *interruptOpt) apply(opts *options) {
+	opts.intrpt = i
+}
+
+func WithDisableInterruptHandler() Option {
+	return &interruptOpt{
+		disableInterruptHandler: true,
+	}
 }
