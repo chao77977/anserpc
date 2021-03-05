@@ -73,7 +73,7 @@ grp := app.RegisterWithGroup("system")
 grp.Register("network", "1.0", true, &network{})
 grp.Register("storage", "1.0", true, &storage{})
 ```
-The following is methods from serive "network" and "storage".
+The following is methods from service "network" and "storage".
 Service's method
 * "network"'s methods
   * Ping
@@ -115,8 +115,8 @@ INFO[03-04|21:02:15] Application started
 ```
 
 Send the request with command curl
-Built-in service
 ```
+# built-in service
 curl -H "Content-Type: application/json" -X GET --data '{"jsonrpc": "2.0", "id":10001,"service": "built-in", "method": "Hello"}' http://127.0.0.1:56789
 
 {"jsonrpc":"2.0","id":10001,"result":"olleh"}
