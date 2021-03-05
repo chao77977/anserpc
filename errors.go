@@ -1,9 +1,5 @@
 package anserpc
 
-import (
-	"fmt"
-)
-
 const (
 	_defErrCode = -32000
 )
@@ -99,5 +95,5 @@ func (s StatusError) ErrorMessage() string {
 }
 
 func (s StatusError) Error() string {
-	return fmt.Sprintf("status error <%d>: %s", s.code, s.err)
+	return s.ErrorMessage()
 }

@@ -115,16 +115,21 @@ INFO[03-04|21:02:15] Application started
 ```
 
 Send the request with command curl
+Built-in service
+```
+curl -H "Content-Type: application/json" -X GET --data '{"jsonrpc": "2.0", "id":10001,"service": "built-in", "method": "Hello"}' http://127.0.0.1:56789
+
+{"jsonrpc":"2.0","id":10001,"result":"olleh"}
+```
+
 ```
 curl -H "Content-Type: application/json" -X GET --data '{"jsonrpc": "2.0", "id":10001,"group": "system", "service": "network", "method": "Ping"}' http://127.0.0.1:56789
-
 
 {"jsonrpc":"2.0","id":10001,"error":{"code":-32000,"message":"unknown host"}}
 ```
 
 ```
 curl -H "Content-Type: application/json" -X GET --data '{"jsonrpc": "2.0", "id":10001,"group": "system", "service": "network", "method": "IP"}'  http://127.0.0.1:56789
-
 
 {"jsonrpc":"2.0","id":10001,"result":"10.0.0.2"}
 ```
@@ -133,4 +138,10 @@ curl -H "Content-Type: application/json" -X GET --data '{"jsonrpc": "2.0", "id":
 curl -H "Content-Type: application/json" -X GET --data '{"jsonrpc": "2.0", "id":10001,"group": "system", "service": "storage", "method": "Add"}'  http://127.0.0.1:56789
 
 {"jsonrpc":"2.0","id":10001,"error":{"code":-1,"message":"error message","data":{}}}
+```
+
+```
+curl -H "Content-Type: application/json" -X GET --data '{"jsonrpc": "2.0", "id":10001,"group": "system", "service": "storage", "method": "NotFound"}'  http://127.0.0.1:56789
+
+{"jsonrpc":"2.0","id":10001,"error":{"code":-32601,"message":"method not found"}}
 ```
