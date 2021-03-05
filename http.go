@@ -7,7 +7,6 @@ import (
 	"mime"
 	"net"
 	"net/http"
-	"strings"
 	"sync"
 
 	"github.com/chao77977/anserpc/util"
@@ -15,6 +14,16 @@ import (
 
 const (
 	_maxReqContentLength = 1024 * 1024 * 5
+)
+
+var (
+	_httpMethods = util.WithStringSet([]string{
+		http.MethodGet,
+		http.MethodHead,
+		http.MethodPost,
+		http.MethodPut,
+		http.MethodPatch,
+	})
 )
 
 type httpOpt struct {
@@ -44,7 +53,7 @@ func (v *validateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// check method
-	if v.deniedMethods.Contains(strings.ToLower(r.Method)) {
+	if v.deniedMethods.Contains(r.Method) {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}

@@ -46,7 +46,7 @@ func (e *myErr) ErrorCode() int         { return -1 }
 func (e *myErr) ErrorMessage() string   { return "error message" }
 func (e *myErr) ErrorData() interface{} { return struct{}{} }
 ```
-### New an application
+### New Application
 Supported options as the following,
 * anserpc.WithRPCEndpoint(host string, port int)
 * anserpc.WithIPCEndpoint(path string)
@@ -55,7 +55,7 @@ Supported options as the following,
 * anserpc.WithHTTPDeniedMethodOpt(methods ...string)
 * anserpc.WithDisableInterruptHandler()
 
-### Register services
+### Register Services
 Compared to standard RPC2.0 defination, we are introducing "group", "service", "service version" and "service is public" to register services. The same service name can be in different group. A service can have different versions.
 * group: "system"
 * service: "network" and "storage"
@@ -97,6 +97,7 @@ type ResultError interface {
 }
 ```
 
+### Start Application
 The following is output when appliaction starts.
 ```
 INFO[03-04|21:02:15] Application register service(s):

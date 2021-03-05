@@ -120,7 +120,7 @@ func withDefaultHTTPOpt() *httpOpt {
 		"localhost",
 	})
 
-	deniedMethods := util.WithLowerStringSet([]string{
+	deniedMethods := util.WithStringSet([]string{
 		http.MethodDelete,
 		http.MethodPut,
 	})
@@ -164,7 +164,12 @@ func WithHTTPDeniedMethodOpt(methods ...string) Option {
 			continue
 		}
 
-		opt.deniedMethods.Add(strings.ToLower(method))
+		methodUpper := strings.ToUpper(method)
+		if !_httpMethods.Contains(methodUpper) {
+			continue
+		}
+
+		opt.deniedMethods.Add(methodUpper)
 	}
 
 	return opt

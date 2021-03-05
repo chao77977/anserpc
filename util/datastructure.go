@@ -14,6 +14,17 @@ func NewStringSet() StringSet {
 	return make(StringSet)
 }
 
+func WithStringSet(ws []string) StringSet {
+	ss := NewStringSet()
+	for _, s := range ws {
+		if s != "" {
+			ss.Add(s)
+		}
+	}
+
+	return ss
+}
+
 func WithLowerStringSet(ws []string) StringSet {
 	ss := NewStringSet()
 	for _, s := range ws {
