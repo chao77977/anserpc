@@ -21,10 +21,11 @@ app.Register("system", "storage", "1.0", false, &storage{})
 app.Run()
 
 // services and their methods
+// service network
 type network struct{}
 
 func (n *network) Ping() error {
-	return nil
+	return errors.New("unknown host")
 }
 
 func (n *network) IP() (string, error) {
@@ -33,9 +34,17 @@ func (n *network) IP() (string, error) {
 
 func (n *network) Restart() {}
 
+// service storage
 type storage struct{}
 
-func (s *storage) Add() error { return nil }
+func (s *storage) Add() error { return &myErr{} }
+
+type myErr struct{}
+
+func (e *myErr) Error() string          { return e.ErrorMessage() }
+func (e *myErr) ErrorCode() int         { return -1 }
+func (e *myErr) ErrorMessage() string   { return "error message" }
+func (e *myErr) ErrorData() interface{} { return struct{}{} }
 ```
 ### New an application
 Supported options as the following,
@@ -48,10 +57,10 @@ Supported options as the following,
 
 ### Register services
 Compared to standard RPC2.0 defination, we are introducing "group", "service", "service version" and "service is public" to register services. The same service name can be in different group. A service can have different versions.
-group: "system"
-service: "network" and "storage"
-service version: "1.0"
-service is public: true
+* group: "system"
+* service: "network" and "storage"
+* service version: "1.0"
+* service is public: true
 
 If you really don't like "group" and "service version", you can keep them as null string.
 ```
@@ -60,12 +69,35 @@ app.Register("", "storage", "", false, &storage{})
 ```
 But if you like, you can also use specified function to register service with group.
 ```
-grp := s.RegisterWithGroup("system")
+grp := app.RegisterWithGroup("system")
 grp.Register("network", "1.0", true, &network{})
 grp.Register("storage", "1.0", true, &storage{})
 ```
 The following is methods from serive "network" and "storage".
+Service's method
+* "network"'s methods
+  * Ping
+  * IP
+  * Restart
+* "storage" 's methods
+  * Add
 
+The return value of method has three types.
+* no return value
+* only one return value, must be 'error'
+* two return values, the first must be result and the second must be 'error'
+
+If you want to return error code, message and data, you can implement the following interface.
+```
+type ResultError interface {
+	Error() string
+	ErrorCode() int
+	ErrorMessage() string
+	ErrorData() interface{}
+}
+```
+
+The following is output when appliaction starts.
 ```
 INFO[03-04|21:02:15] Application register service(s):
 INFO[03-04|21:02:15] built-in_1.0(public) -> Hello
