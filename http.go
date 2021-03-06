@@ -1,12 +1,15 @@
 package anserpc
 
 import (
+	"compress/gzip"
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"mime"
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 
 	"github.com/chao77977/anserpc/util"
@@ -127,6 +130,52 @@ func newVirtualHostHandler(opt *httpOpt, next http.Handler) http.Handler {
 	}
 }
 
+type gzipWriteHandler struct {
+	io.WriteCloser
+	http.ResponseWriter
+	next http.Handler
+}
+
+func (g *gzipWriteHandler) Write(b []byte) (int, error) {
+	return g.WriteCloser.Write(b)
+}
+
+func (g *gzipWriteHandler) WriteHeader(statusCode int) {
+	g.Header().Del("Content-Length")
+	g.ResponseWriter.WriteHeader(statusCode)
+}
+
+func (g *gzipWriteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+		g.next.ServeHTTP(w, r)
+		return
+	}
+
+	w.Header().Set("Content-Encoding", "gzip")
+	g.ResponseWriter = w
+
+	gw := gwPool.Get().(*gzip.Writer)
+	defer gwPool.Put(gw)
+
+	gw.Reset(w)
+	g.WriteCloser = gw
+	defer g.WriteCloser.Close()
+
+	g.next.ServeHTTP(g, r)
+}
+
+func newGzipWriteHandler(next http.Handler) http.Handler {
+	return &gzipWriteHandler{
+		next: next,
+	}
+}
+
+var gwPool = sync.Pool{
+	New: func() interface{} {
+		return gzip.NewWriter(ioutil.Discard)
+	},
+}
+
 type httpServerConn struct {
 	io.Reader
 	io.Writer
@@ -154,6 +203,7 @@ func newHttpServer(opt *httpOpt, sr *serviceRegistry) *httpServer {
 
 	server.head = newValidateHandler(opt, server)
 	server.head = newVirtualHostHandler(opt, server.head)
+	server.head = newGzipWriteHandler(server.head)
 	return server
 }
 
