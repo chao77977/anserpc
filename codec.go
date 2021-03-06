@@ -14,14 +14,15 @@ const (
 )
 
 type jsonMessage struct {
-	Version string          `json:"jsonrpc,omitempty"`
-	Group   string          `json:"group,omitempty"`
-	Service string          `json:"service,omitempty"`
-	Method  string          `json:"method,omitempty"`
-	Params  json.RawMessage `json:"params,omitempty"`
-	ID      json.RawMessage `json:"id,omitempty"`
-	Result  json.RawMessage `json:"result,omitempty"`
-	Error   *jsonError      `json:"error,omitempty"`
+	Version        string          `json:"jsonrpc,omitempty"`
+	Group          string          `json:"group,omitempty"`
+	Service        string          `json:"service,omitempty"`
+	ServiceVersion string          `json:"service_version,omitempty"`
+	Method         string          `json:"method,omitempty"`
+	Params         json.RawMessage `json:"params,omitempty"`
+	ID             json.RawMessage `json:"id,omitempty"`
+	Result         json.RawMessage `json:"result,omitempty"`
+	Error          *jsonError      `json:"error,omitempty"`
 }
 
 func (m *jsonMessage) doValidate() error {
@@ -61,12 +62,17 @@ func (m *jsonMessage) response(result interface{}) *jsonMessage {
 }
 
 func (m *jsonMessage) String() string {
-	b, err := json.Marshal(m)
-	if err != nil {
-		return _errJSONContent.Error()
+	s := Fmt("(version: %s id: %s)", m.Version, string(m.ID))
+	if m.Group != "" {
+		s += Fmt(" group: %s", m.Group)
 	}
 
-	return string(b)
+	s += Fmt(" %s", m.Service)
+	if m.ServiceVersion != "" {
+		s += Fmt("_%s", m.ServiceVersion)
+	}
+
+	return s + Fmt(" -> %s", m.Method)
 }
 
 func zeroArgs(args []reflect.Value, types []reflect.Type) ([]reflect.Value, error) {

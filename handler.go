@@ -85,7 +85,7 @@ func (h *handler) handle(msg *jsonMessage, msgC chan<- *jsonMessage) {
 		return
 	}
 
-	cb := h.sr.callback(msg.Group, msg.Service, "", msg.Method)
+	cb := h.sr.callback(msg.Group, msg.Service, msg.ServiceVersion, msg.Method)
 	if cb == nil {
 		_xlog.Debug("Method callback not found or not available",
 			"message", msg)
