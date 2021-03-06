@@ -145,3 +145,29 @@ curl -H "Content-Type: application/json" -X GET --data '{"jsonrpc": "2.0", "id":
 
 {"jsonrpc":"2.0","id":10001,"error":{"code":-32601,"message":"method not found"}}
 ```
+
+## Quick Sample: IPC
+Anserpc can run both RPC on HTTP and IPC servers.
+```
+app := anserpc.New(
+    anserpc.WithRPCEndpoint("0.0.0.0", 56789),
+    anserpc.WithIPCEndpoint("/var/run/anser.sock"),
+)
+```
+
+The following is output when appliaction starts.
+```
+INFO[03-06|12:06:11] Application register service(s):
+INFO[03-06|12:06:11] built-in_1.0(public) -> Hello
+INFO[03-06|12:06:11] system: network_1.0(public) -> IP
+INFO[03-06|12:06:11] system: network_1.0(public) -> Ping
+INFO[03-06|12:06:11] system: network_1.0(public) -> Restart
+INFO[03-06|12:06:11] system: storage_1.0(public) -> Add
+INFO[03-06|12:06:11] Application: running using 2 server(s)
+INFO[03-06|12:06:11] HTTP: addr is [::]:56789
+INFO[03-06|12:06:11] HTTP: virtual host is localhost
+INFO[03-06|12:06:11] HTTP: denied method(s): DELETE/PUT
+INFO[03-06|12:06:11] IPC: path is /var/run/anser.sock
+INFO[03-06|12:06:11] Server(s) shutdown on interrupt(CTRL+C)
+INFO[03-06|12:06:11] Application started
+```

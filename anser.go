@@ -237,7 +237,7 @@ func (a *Anser) status() {
 		_xlog.Info("IPC: path is " + string(a.is.endpoint))
 	}
 
-	if a.opts.intrpt != nil && !a.opts.intrpt.disableInterruptHandler {
+	if a.opts.intrpt == nil || !a.opts.intrpt.disableInterruptHandler {
 		_xlog.Info("Server(s) shutdown on interrupt(CTRL+C)")
 	}
 
