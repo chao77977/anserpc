@@ -13,7 +13,7 @@ var (
 type serverStatus int
 
 type waitProc interface {
-	wait() error
+	wait()
 	stop()
 }
 

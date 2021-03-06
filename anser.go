@@ -19,15 +19,16 @@ const (
 )
 
 type Anser struct {
-	opts *options
-	wg   sync.WaitGroup
-	mu   sync.Mutex
+	opts     *options
+	wg       sync.WaitGroup
+	mu       sync.Mutex
+	nRunning uint64
 
-	nRunning  uint64
-	sr        *serviceRegistry
-	rpcServer *httpServer
-	rpcMu     sync.Mutex
-	rpcErr    error
+	sr   *serviceRegistry
+	rs   *httpServer
+	rsMu sync.Mutex
+	is   *ipcServer
+	isMu sync.Mutex
 }
 
 func New(ops ...Option) *Anser {
@@ -73,6 +74,10 @@ func (a *Anser) rpcAllowed() bool {
 	return a.opts.rpc != nil
 }
 
+func (a *Anser) ipcAllowed() bool {
+	return a.opts.ipc != ""
+}
+
 func (a *Anser) interruptHandle() {
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -91,15 +96,56 @@ func (a *Anser) startToWait(wp waitProc) {
 			return
 		}
 
-		a.rpcErr = wp.wait()
+		wp.wait()
 	}()
 }
 
-func (a *Anser) statusRPCServer() serverStatus {
-	a.rpcMu.Lock()
-	defer a.rpcMu.Unlock()
+func (a *Anser) statusIPCServer() serverStatus {
+	a.isMu.Lock()
+	defer a.isMu.Unlock()
 
-	if a.rpcServer != nil && a.rpcServer.isRunning() {
+	if a.is != nil && a.is.isRunning() {
+		return _statRunning
+	}
+
+	return _statStopped
+}
+
+func (a *Anser) enableIPCServer() error {
+	a.isMu.Lock()
+	defer a.isMu.Unlock()
+
+	a.is = newIPCServer(a.sr)
+	if err := a.is.setPath(a.opts.ipc); err != nil {
+		return err
+	}
+
+	if err := a.is.start(); err != nil {
+		return err
+	}
+
+	a.startToWait(a.is)
+	atomic.AddUint64(&a.nRunning, 1)
+
+	return nil
+}
+
+func (a *Anser) disableIPCServer() {
+	a.isMu.Lock()
+	defer a.isMu.Unlock()
+
+	if a.is == nil {
+		return
+	}
+
+	a.is.stop()
+}
+
+func (a *Anser) statusRPCServer() serverStatus {
+	a.rsMu.Lock()
+	defer a.rsMu.Unlock()
+
+	if a.rs != nil && a.rs.isRunning() {
 		return _statRunning
 	}
 
@@ -107,52 +153,53 @@ func (a *Anser) statusRPCServer() serverStatus {
 }
 
 func (a *Anser) enableRPCServer() error {
-	a.rpcMu.Lock()
-	defer a.rpcMu.Unlock()
+	a.rsMu.Lock()
+	defer a.rsMu.Unlock()
 
-	a.rpcServer = newHttpServer(a.opts.http, a.sr)
-	a.rpcErr = a.rpcServer.setListenAddr(a.opts.rpc)
-	if a.rpcErr != nil {
-		return a.rpcErr
+	a.rs = newHttpServer(a.opts.http, a.sr)
+	if err := a.rs.setListenAddr(a.opts.rpc); err != nil {
+		return err
 	}
 
-	a.rpcErr = a.rpcServer.start()
-	if a.rpcErr != nil {
-		return a.rpcErr
+	if err := a.rs.start(); err != nil {
+		return err
 	}
 
-	a.startToWait(a.rpcServer)
+	a.startToWait(a.rs)
 	atomic.AddUint64(&a.nRunning, 1)
 
 	return nil
 }
 
 func (a *Anser) disableRPCServer() {
-	a.rpcMu.Lock()
-	defer a.rpcMu.Unlock()
+	a.rsMu.Lock()
+	defer a.rsMu.Unlock()
 
-	if a.rpcServer == nil {
+	if a.rs == nil {
 		return
 	}
 
-	a.rpcServer.stop()
+	a.rs.stop()
 }
 
 func (a *Anser) Run() {
 	a.interruptHandle()
 	if a.rpcAllowed() && a.statusRPCServer() != _statRunning {
 		if err := a.enableRPCServer(); err != nil {
+			_xlog.Debug("Failed to enable RPC server", "err", err)
 			a.disableRPCServer()
+		}
+	}
+
+	if a.ipcAllowed() && a.statusIPCServer() != _statRunning {
+		if err := a.enableIPCServer(); err != nil {
+			_xlog.Debug("Failed to enable IPC server", "err", err)
+			a.disableIPCServer()
 		}
 	}
 
 	a.status()
 	a.wg.Wait()
-
-	if a.rpcErr != nil {
-		_xlog.Debug("HTTP server is stopped", "err", a.rpcErr)
-	}
-
 	_xlog.Info("Application is down")
 }
 
@@ -171,7 +218,7 @@ func (a *Anser) status() {
 		atomic.LoadUint64(&a.nRunning)))
 
 	if a.statusRPCServer() == _statRunning {
-		_xlog.Info("HTTP: addr is " + a.rpcServer.listenAddr())
+		_xlog.Info("HTTP: addr is " + a.rs.listenAddr())
 	}
 
 	if a.opts.http != nil {
@@ -186,6 +233,10 @@ func (a *Anser) status() {
 		}
 	}
 
+	if a.statusIPCServer() == _statRunning {
+		_xlog.Info("IPC: path is " + string(a.is.endpoint))
+	}
+
 	if a.opts.intrpt != nil && !a.opts.intrpt.disableInterruptHandler {
 		_xlog.Info("Server(s) shutdown on interrupt(CTRL+C)")
 	}
@@ -195,5 +246,6 @@ func (a *Anser) status() {
 
 func (a *Anser) Close() {
 	a.disableRPCServer()
+	a.disableIPCServer()
 	a.wg.Wait()
 }

@@ -213,8 +213,10 @@ func (h *httpServer) serve() {
 	h.err <- h.server.Serve(h.listener)
 }
 
-func (h *httpServer) wait() error {
-	return <-h.err
+func (h *httpServer) wait() {
+	if err := <-h.err; err != nil {
+		_xlog.Debug("HTTP server is stopped", "err", err)
+	}
 }
 
 func (h *httpServer) stop() {
