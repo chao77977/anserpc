@@ -17,7 +17,7 @@ const (
 
 type ipcServerConn struct {
 	io.Reader
-	io.WriteCloser
+	WriteCloserAndDeadline
 }
 
 type ipcServer struct {
@@ -122,8 +122,8 @@ func (i *ipcServer) serveIPC(conn net.Conn) {
 		"anser-local", conn.LocalAddr())
 
 	localConn := &ipcServerConn{
-		Reader:      io.LimitReader(conn, _maxReqContentLength),
-		WriteCloser: conn,
+		Reader:                 io.LimitReader(conn, _maxReqContentLength),
+		WriteCloserAndDeadline: conn,
 	}
 
 	jcodec := newCodec(localConn)

@@ -7,10 +7,12 @@ import (
 	"io"
 	"reflect"
 	"sync"
+	"time"
 )
 
 const (
-	_defJsonRpcVersion = "2.0"
+	_defJsonRpcVersion   = "2.0"
+	_defConnWriteTimeout = 10 * time.Second
 )
 
 type jsonMessage struct {
@@ -241,7 +243,12 @@ func (j *jsonCodec) writeTo(ctx context.Context, x interface{}) error {
 	j.mu.Lock()
 	defer j.mu.Unlock()
 
-	// ctx: more settings
+	deadline, ok := ctx.Deadline()
+	if !ok {
+		deadline = time.Now().Add(_defConnWriteTimeout)
+	}
+
+	j.conn.SetWriteDeadline(deadline)
 	return j.encode(x)
 }
 

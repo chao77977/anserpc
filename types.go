@@ -2,6 +2,7 @@ package anserpc
 
 import (
 	"io"
+	"time"
 
 	"github.com/chao77977/anserpc/util"
 )
@@ -18,7 +19,15 @@ type waitProc interface {
 }
 
 type Conn interface {
-	io.ReadWriteCloser
+	//io.ReadWriteCloser
+	//SetWriteDeadline(time.Time) error
+	io.Reader
+	WriteCloserAndDeadline
+}
+
+type WriteCloserAndDeadline interface {
+	io.WriteCloser
+	SetWriteDeadline(time.Time) error
 }
 
 type ResultCodeError interface {

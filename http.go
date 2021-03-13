@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/chao77977/anserpc/util"
 )
@@ -182,6 +183,8 @@ type httpServerConn struct {
 }
 
 func (h *httpServerConn) Close() error { return nil }
+
+func (h *httpServerConn) SetWriteDeadline(time.Time) error { return nil }
 
 type httpServer struct {
 	sr       *serviceRegistry
