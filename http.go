@@ -132,16 +132,20 @@ func newVirtualHostHandler(opt *httpOpt, next http.Handler) http.Handler {
 }
 
 type gzipWriteHandler struct {
-	io.WriteCloser
-	http.ResponseWriter
+	rw   *gzipResponseWriter
 	next http.Handler
 }
 
-func (g *gzipWriteHandler) Write(b []byte) (int, error) {
+type gzipResponseWriter struct {
+	io.WriteCloser
+	http.ResponseWriter
+}
+
+func (g *gzipResponseWriter) Write(b []byte) (int, error) {
 	return g.WriteCloser.Write(b)
 }
 
-func (g *gzipWriteHandler) WriteHeader(statusCode int) {
+func (g *gzipResponseWriter) WriteHeader(statusCode int) {
 	g.Header().Del("Content-Length")
 	g.ResponseWriter.WriteHeader(statusCode)
 }
@@ -153,16 +157,19 @@ func (g *gzipWriteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Encoding", "gzip")
-	g.ResponseWriter = w
 
 	gw := gwPool.Get().(*gzip.Writer)
 	defer gwPool.Put(gw)
-
 	gw.Reset(w)
-	g.WriteCloser = gw
-	defer g.WriteCloser.Close()
 
-	g.next.ServeHTTP(g, r)
+	g.rw = &gzipResponseWriter{
+		WriteCloser:    gw,
+		ResponseWriter: w,
+	}
+
+	defer g.rw.WriteCloser.Close()
+
+	g.next.ServeHTTP(g.rw, r)
 }
 
 func newGzipWriteHandler(next http.Handler) http.Handler {
