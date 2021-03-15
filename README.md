@@ -114,14 +114,23 @@ INFO[03-04|21:02:15] Server(s) shutdown on interrupt(CTRL+C)
 INFO[03-04|21:02:15] Application started
 ```
 
-Send the request with command curl
+#### Build-in Services
+Method: Hello
 ```
-# built-in service
 curl -H "Content-Type: application/json" -X GET --data '{"jsonrpc": "2.0", "id":10001,"service": "built-in", "method": "Hello"}' http://127.0.0.1:56789
 
 {"jsonrpc":"2.0","id":10001,"result":"olleh"}
 ```
 
+Method: Metrics
+```
+ curl -H "Content-Type: application/json" -X GET --data '{"jsonrpc": "2.0", "id":10001,"service": "built-in", "method": "Metrics"}' http://127.0.0.1:56789
+
+ {"jsonrpc":"2.0","id":10001,"result":"{\"anser/failure\":{\"count\":1},\"anser/requests\":{\"count\":2},\"anser/success\":{\"count\":1}}"}
+```
+
+
+#### Registered Services
 ```
 curl -H "Content-Type: application/json" -X GET --data '{"jsonrpc": "2.0", "id":10001,"group": "system", "service": "network", "method": "Ping"}' http://127.0.0.1:56789
 
