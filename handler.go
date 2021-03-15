@@ -68,8 +68,14 @@ LOOP:
 		select {
 		case retMsg := <-msgC:
 			_xlog.Info("Method completed", "message", msg)
+			if retMsg.hasErr() {
+				_failureReqeustCounter.Inc(1)
+			} else {
+				_successRequestCounter.Inc(1)
+			}
 			return retMsg
 		case <-timer.C:
+			_failureReqeustCounter.Inc(1)
 			break LOOP
 		}
 	}
@@ -134,6 +140,8 @@ func (h *handler) call(cb *callback, msg string, args []reflect.Value) (result i
 			err = _errMethodCrashed
 		}
 	}()
+
+	_requestCounter.Inc(1)
 
 	r := cb.fn.Call(callArgs)
 	if cb.returnType < 0 {

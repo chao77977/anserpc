@@ -17,7 +17,7 @@ var (
 		err:  "method not found",
 	}
 
-	// tnvalid method parameter(s)
+	// invalid method parameter(s)
 	_errInvalidParams = StatusError{
 		code: -32602,
 		err:  "invalid params",

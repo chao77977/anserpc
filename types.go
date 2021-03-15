@@ -19,8 +19,6 @@ type waitProc interface {
 }
 
 type Conn interface {
-	//io.ReadWriteCloser
-	//SetWriteDeadline(time.Time) error
 	io.Reader
 	WriteCloserAndDeadline
 }
