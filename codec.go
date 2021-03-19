@@ -188,7 +188,7 @@ type jsonCodec struct {
 	closeC    chan struct{}
 	encode    func(x interface{}) error
 	decode    func(x interface{}) error
-	conn      Conn
+	conn      CloserAndDeadline
 }
 
 func (j *jsonCodec) readBatch() ([]*jsonMessage, bool, error) {

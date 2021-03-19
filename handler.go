@@ -11,6 +11,23 @@ const (
 	_defTimeout = 3600 // 2 hours
 )
 
+func doHandle(ctx context.Context, jCodec serviceCodec, sr *serviceRegistry) {
+	msgs, isBatch, err := jCodec.readBatch()
+	if err != nil {
+		jCodec.writeTo(ctx, makeJSONErrorMessage(err))
+		return
+	}
+
+	msgHdl := newHandler(sr, ctx)
+	defer msgHdl.close()
+
+	if !isBatch {
+		jCodec.writeTo(ctx, msgHdl.handleMsg(msgs[0]))
+	} else {
+		jCodec.writeTo(ctx, msgHdl.handleMsgs(msgs))
+	}
+}
+
 type handler struct {
 	sr    *serviceRegistry
 	ctx   context.Context

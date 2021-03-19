@@ -129,23 +129,5 @@ func (i *ipcServer) serveIPC(conn net.Conn) {
 	jcodec := newCodec(localConn)
 	defer jcodec.close()
 
-	i.serveRequest(ctx, jcodec)
-}
-
-func (i *ipcServer) serveRequest(ctx context.Context, jCodec *jsonCodec) {
-	msgs, isBatch, err := jCodec.readBatch()
-	if err != nil {
-		jCodec.writeTo(ctx, makeJSONErrorMessage(err))
-		return
-	}
-
-	msgHdl := newHandler(i.sr, ctx)
-	defer msgHdl.close()
-
-	if !isBatch {
-		jCodec.writeTo(ctx, msgHdl.handleMsg(msgs[0]))
-		return
-	}
-
-	jCodec.writeTo(ctx, msgHdl.handleMsgs(msgs))
+	doHandle(ctx, jcodec, i.sr)
 }

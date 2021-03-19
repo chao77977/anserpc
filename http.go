@@ -34,6 +34,7 @@ type httpOpt struct {
 	vhosts              util.StringSet
 	deniedMethods       util.StringSet
 	allowedContentTypes util.StringSet
+	WebsocketAllowed    bool
 }
 
 func (h *httpOpt) apply(opts *options) {
@@ -214,6 +215,7 @@ func newHttpServer(opt *httpOpt, sr *serviceRegistry) *httpServer {
 	server.head = newValidateHandler(opt, server)
 	server.head = newVirtualHostHandler(opt, server.head)
 	server.head = newGzipWriteHandler(server.head)
+	//server.head = newWebsocketHandler(opt.WebsocketAllowed, server.head)
 	return server
 }
 
@@ -311,26 +313,5 @@ func (h *httpServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	jcodec := newCodec(conn)
 	defer jcodec.close()
 
-	if err := h.serveRequest(ctx, jcodec); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
-
-func (h *httpServer) serveRequest(ctx context.Context, jCodec *jsonCodec) error {
-	msgs, isBatch, err := jCodec.readBatch()
-	if err != nil {
-		jCodec.writeTo(ctx, makeJSONErrorMessage(err))
-		return nil
-	}
-
-	msgHdl := newHandler(h.sr, ctx)
-	defer msgHdl.close()
-
-	if !isBatch {
-		jCodec.writeTo(ctx, msgHdl.handleMsg(msgs[0]))
-		return nil
-	}
-
-	jCodec.writeTo(ctx, msgHdl.handleMsgs(msgs))
-	return nil
+	doHandle(ctx, jcodec, h.sr)
 }

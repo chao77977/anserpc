@@ -1,6 +1,7 @@
 package anserpc
 
 import (
+	"context"
 	"io"
 	"time"
 
@@ -23,9 +24,19 @@ type Conn interface {
 	WriteCloserAndDeadline
 }
 
-type WriteCloserAndDeadline interface {
-	io.WriteCloser
+type CloserAndDeadline interface {
+	io.Closer
 	SetWriteDeadline(time.Time) error
+}
+
+type WriteCloserAndDeadline interface {
+	io.Writer
+	CloserAndDeadline
+}
+
+type serviceCodec interface {
+	readBatch() ([]*jsonMessage, bool, error)
+	writeTo(context.Context, interface{}) error
 }
 
 type ResultCodeError interface {

@@ -135,6 +135,7 @@ func withDefaultHTTPOpt() *httpOpt {
 		vhosts:              vhosts,
 		deniedMethods:       deniedMethods,
 		allowedContentTypes: allowedContentTypes,
+		WebsocketAllowed:    true,
 	}
 }
 
