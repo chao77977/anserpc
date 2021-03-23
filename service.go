@@ -149,7 +149,7 @@ func (s *serviceRegistry) callback(grpName, srvName, version, method string) *ca
 		return nil
 	}
 
-	cb, _ := srv.callbacks[method]
+	cb, _ := srv.callbacks[util.FormatName(method)]
 	return cb
 }
 
@@ -292,7 +292,7 @@ func makeCallbacks(rcvr reflect.Value) (map[string]*callback, error) {
 			return nil, err
 		}
 
-		cbs[method.Name] = cb
+		cbs[util.FormatName(method.Name)] = cb
 	}
 
 	if len(cbs) == 0 {
