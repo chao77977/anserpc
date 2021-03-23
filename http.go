@@ -203,19 +203,21 @@ type httpServer struct {
 	err      chan error
 	endpoint *rpcEndpoint
 	head     http.Handler
+	codecs   *codecSet
 }
 
 func newHttpServer(opt *httpOpt, sr *serviceRegistry) *httpServer {
 	server := &httpServer{
-		sr:  sr,
-		opt: opt,
-		err: make(chan error),
+		sr:     sr,
+		opt:    opt,
+		err:    make(chan error),
+		codecs: newCodecSet(),
 	}
 
 	server.head = newValidateHandler(opt, server)
 	server.head = newVirtualHostHandler(opt, server.head)
 	server.head = newGzipWriteHandler(server.head)
-	//server.head = newWebsocketHandler(opt.WebsocketAllowed, server.head)
+	server.head = newWebsocketHandler(opt, server, server.head)
 	return server
 }
 
@@ -292,6 +294,7 @@ func (h *httpServer) doStop() {
 		return
 	}
 
+	h.codecs.close()
 	h.server.Shutdown(context.Background())
 	h.listener.Close()
 
@@ -312,6 +315,9 @@ func (h *httpServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	jcodec := newCodec(conn)
 	defer jcodec.close()
+
+	h.codecs.add(jcodec)
+	defer h.codecs.remove(jcodec)
 
 	doHandle(ctx, jcodec, h.sr)
 }
