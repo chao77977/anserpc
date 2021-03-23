@@ -14,7 +14,8 @@ const (
 func doHandle(ctx context.Context, jCodec serviceCodec, sr *serviceRegistry) {
 	msgs, isBatch, err := jCodec.readBatch()
 	if err != nil {
-		jCodec.writeTo(ctx, makeJSONErrorMessage(err))
+		_xlog.Debug("Read message error", "err", err)
+		jCodec.writeTo(ctx, makeJSONErrorMessage(_errInvalidRequest))
 		return
 	}
 

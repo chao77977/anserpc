@@ -37,6 +37,7 @@ type WriteCloserAndDeadline interface {
 type serviceCodec interface {
 	readBatch() ([]*jsonMessage, bool, error)
 	writeTo(context.Context, interface{}) error
+	close()
 }
 
 type ResultCodeError interface {

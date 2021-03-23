@@ -194,8 +194,7 @@ type jsonCodec struct {
 func (j *jsonCodec) readBatch() ([]*jsonMessage, bool, error) {
 	var rawMsg json.RawMessage
 	if err := j.decode(&rawMsg); err != nil {
-		_xlog.Debug("invalid request", "err", err)
-		return nil, false, _errInvalidRequest
+		return nil, false, err
 	}
 
 	isBatch := false
@@ -270,4 +269,62 @@ func newCodec(conn Conn) *jsonCodec {
 		decode: dec.Decode,
 		conn:   conn,
 	}
+}
+
+type codecSet struct {
+	mu  sync.Mutex
+	scs map[serviceCodec]struct{}
+}
+
+func newCodecSet() *codecSet {
+	return &codecSet{
+		scs: make(map[serviceCodec]struct{}),
+	}
+}
+
+func (c *codecSet) add(sc serviceCodec) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if sc == nil {
+		return
+	}
+
+	c.scs[sc] = struct{}{}
+}
+
+func (c *codecSet) remove(sc serviceCodec) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if sc == nil {
+		return
+	}
+
+	if c.contains(sc) {
+		delete(c.scs, sc)
+	}
+}
+
+func (c *codecSet) contains(sc serviceCodec) bool {
+	_, ok := c.scs[sc]
+	return ok
+}
+
+func (c *codecSet) each(cb func(serviceCodec) bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	for sc := range c.scs {
+		if cb(sc) {
+			break
+		}
+	}
+}
+
+func (c *codecSet) close() {
+	c.each(func(sc serviceCodec) bool {
+		sc.close()
+		return true
+	})
 }
