@@ -1,6 +1,9 @@
 # anserpc - A Lightweight JSON2.0 RPC Lib
 Anser cygnoides (Chinese name 鸿雁), that is swan goose. Anserpc is matching
-JSON-RPC 2.0 specification, providing a lib to develop server application easily.
+JSON-RPC 2.0 specification, providing a lib to develop server application easily. It can handle JSON-RPC request on the following,
+* RPC on HTTP
+* RPC on Websocket
+* IPC
 
 ## Install
 ```
