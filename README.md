@@ -110,6 +110,7 @@ INFO[03-04|21:02:15] Application: running using 1 server(s)
 INFO[03-04|21:02:15] HTTP: addr is [::]:56789
 INFO[03-04|21:02:15] HTTP: virtual host is localhost
 INFO[03-04|21:02:15] HTTP: denied method(s): DELETE/PUT
+INFO[03-04|21:02:15] Websocket: enabled
 INFO[03-04|21:02:15] Server(s) shutdown on interrupt(CTRL+C)
 INFO[03-04|21:02:15] Application started
 ```
@@ -176,6 +177,7 @@ INFO[03-06|12:06:11] Application: running using 2 server(s)
 INFO[03-06|12:06:11] HTTP: addr is [::]:56789
 INFO[03-06|12:06:11] HTTP: virtual host is localhost
 INFO[03-06|12:06:11] HTTP: denied method(s): DELETE/PUT
+INFO[03-06|12:06:11] Websocket: enabled
 INFO[03-06|12:06:11] IPC: path is /var/run/anser.sock
 INFO[03-06|12:06:11] Server(s) shutdown on interrupt(CTRL+C)
 INFO[03-06|12:06:11] Application started
