@@ -231,6 +231,12 @@ func (a *Anser) status() {
 			_xlog.Info("HTTP: denied method(s): " +
 				strings.ToUpper(strings.Join(methods, "/")))
 		}
+
+		if a.opts.http.WebsocketAllowed {
+			_xlog.Info("Websocket: enabled")
+		} else {
+			_xlog.Info("Websocket: disabled")
+		}
 	}
 
 	if a.statusIPCServer() == _statRunning {
