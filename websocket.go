@@ -52,6 +52,16 @@ func (ws *websocketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (ws *websocketHandler) doHandle(ctx context.Context, jCodec serviceCodec) {
+	defer func() {
+		for {
+			select {
+			case <-ws.readErr:
+			case <-ws.readMsg:
+				return
+			}
+		}
+	}()
+
 	go ws.read(ctx, jCodec)
 
 	for {
@@ -163,6 +173,11 @@ func (w *webSocketCodec) ping() {
 func (w *webSocketCodec) close() {
 	w.jsonCodec.close()
 	w.wg.Wait()
+
+	select {
+	case <-w.resetC:
+	default:
+	}
 }
 
 func newWebSocketCodec(conn *websocket.Conn) *webSocketCodec {
