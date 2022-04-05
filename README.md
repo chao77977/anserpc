@@ -185,3 +185,7 @@ INFO[03-06|12:06:11] IPC: path is /var/run/anser.sock
 INFO[03-06|12:06:11] Server(s) shutdown on interrupt(CTRL+C)
 INFO[03-06|12:06:11] Application started
 ```
+
+## LICENSE
+
+anserpc source code is licensed under the [Apache Licence, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.html).
