@@ -106,7 +106,7 @@ func (m *jsonMessage) retrieveArgs(types []reflect.Type) ([]reflect.Value, error
 	}
 
 	for i := 0; dec.More(); i++ {
-		if i > len(types) {
+		if i >= len(types) {
 			return nil, _errTooManyParams
 		}
 
