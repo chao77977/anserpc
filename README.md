@@ -1,47 +1,77 @@
-# anserpc - A Lightweight JSON2.0 RPC Lib
-Anser cygnoides (Chinese name 鸿雁), that is swan goose. Anserpc is matching
-JSON-RPC 2.0 specification, providing a lib to develop server application easily. It can handle JSON-RPC request on the following,
-* RPC on HTTP
-* RPC on Websocket
-* IPC
+# anserpc — A Lightweight JSON-RPC 2.0 Library for Go
+
+> Anser cygnoides (Chinese name 鸿雁), the swan goose.
+
+`anserpc` is a small, dependency-light library that implements the
+[JSON-RPC 2.0 specification](https://www.jsonrpc.org/specification). It lets you
+expose plain Go structs as RPC services over multiple transports with minimal
+boilerplate.
+
+Supported transports:
+
+- **HTTP** — JSON-RPC over HTTP
+- **WebSocket** — JSON-RPC over a persistent WebSocket connection (with server-side ping keep-alive)
+- **IPC** — JSON-RPC over a Unix domain socket
+
+Key features:
+
+- Register any struct as a service; exported methods are auto-discovered via reflection.
+- Logical addressing by **group / service / service-version / method**.
+- Per-service public/private visibility.
+- Batch request support.
+- Built-in services for health check (`Hello`) and runtime metrics (`Metrics`).
+- Configurable HTTP virtual-host allowlist, denied methods, content-type checks, and gzip responses.
+- Graceful shutdown on `SIGINT` / `SIGTERM` (CTRL+C).
+- Pluggable logging (terminal or JSON file output, or your own `Logger`).
+
+See [docs/DESIGN.md](docs/DESIGN.md) for the architecture and internals.
 
 ## Install
+
+```sh
+go get github.com/chao77977/anserpc
 ```
-$ go get github.com/chao77977/anserpc
-```
 
-## Quick Sample: RPC on HTTP
-```
-app := anserpc.New(
-    anserpc.WithRPCEndpoint("0.0.0.0", 56789),
-)
+Requires Go 1.15+.
 
-// register service
-app.Register("system", "network", "1.0", true, &network{})
-app.Register("system", "storage", "1.0", false, &storage{})
+> **Note:** `websocket.go` imports `github.com/gorilla/websocket`, which is not
+> currently listed in `go.mod`. If you build the WebSocket transport you may
+> need to run `go get github.com/gorilla/websocket` and tidy the module.
 
-// application starts
-app.Run()
+## Quick Start: RPC over HTTP
 
-// services and their methods
-// service network
+```go
+package main
+
+import "errors"
+import "github.com/chao77977/anserpc"
+
+func main() {
+    app := anserpc.New(
+        anserpc.WithRPCEndpoint("0.0.0.0", 56789),
+    )
+
+    // register services
+    app.Register("system", "network", "1.0", true, &network{})
+    app.Register("system", "storage", "1.0", false, &storage{})
+
+    // blocks until interrupted
+    app.Run()
+}
+
+// service: network
 type network struct{}
 
-func (n *network) Ping() error {
-	return errors.New("unknown host")
-}
+func (n *network) Ping() error          { return errors.New("unknown host") }
+func (n *network) IP() (string, error)  { return "10.0.0.2", nil }
+func (n *network) Restart()             {}
 
-func (n *network) IP() (string, error) {
-	return "10.0.0.2", nil
-}
-
-func (n *network) Restart() {}
-
-// service storage
+// service: storage
 type storage struct{}
 
 func (s *storage) Add() error { return &myErr{} }
 
+// a rich error carrying code / message / data
 type myErr struct{}
 
 func (e *myErr) Error() string          { return e.ErrorMessage() }
@@ -49,59 +79,104 @@ func (e *myErr) ErrorCode() int         { return -1 }
 func (e *myErr) ErrorMessage() string   { return "error message" }
 func (e *myErr) ErrorData() interface{} { return struct{}{} }
 ```
-### New Application
-Supported options as the following,
-* anserpc.WithRPCEndpoint(host string, port int)
-* anserpc.WithIPCEndpoint(path string)
-* anserpc.WithLogFileOpt(path string, filterLvl logLvl)
-* anserpc.WithHTTPVhostOpt(vhosts ...string)
-* anserpc.WithHTTPDeniedMethodOpt(methods ...string)
-* anserpc.WithDisableInterruptHandler()
 
-### Register Services
-Compared to standard RPC2.0 defination, we are introducing "group", "service", "service version" and "service is public" to register services. The same service name can be in different group. A service can have different versions.
-* group: "system"
-* service: "network" and "storage"
-* service version: "1.0"
-* service is public: true
+## Configuration Options
 
-If you really don't like "group" and "service version", you can keep them as null string.
-```
+Pass options to `anserpc.New(...)`:
+
+| Option | Description |
+| --- | --- |
+| `WithRPCEndpoint(host string, port int)` | Enable the HTTP/WebSocket server on the given address. |
+| `WithDefaultRPCEndpoint()` | Enable HTTP on the default `127.0.0.1:56789`. |
+| `WithIPCEndpoint(path string)` | Enable the IPC (Unix socket) server at `path`. |
+| `WithDefaultIPCEndpoint()` | Enable IPC on the default `/var/run/anser.rpc`. |
+| `WithLogFileOpt(path string, filterLvl logLvl)` | Write logs as JSON to a file at the given level. |
+| `WithDefaultLogOpt()` | Terminal logging at `LvlDebug` (the default). |
+| `WithLoggerOpt(logger Logger)` | Use your own `Logger` implementation. |
+| `WithHTTPVhostOpt(vhosts ...string)` | Add allowed virtual hosts (`"*"` allows any). |
+| `WithHTTPDeniedMethodOpt(methods ...string)` | Deny specific HTTP methods. |
+| `WithDisableInterruptHandler()` | Do not install the CTRL+C shutdown handler. |
+
+Log levels: `LvlCrit`, `LvlError`, `LvlWarn`, `LvlInfo`, `LvlDebug`.
+
+HTTP defaults: virtual host `localhost`; denied methods `DELETE` and `PUT`;
+allowed content types `application/json`, `application/json-rpc`,
+`application/jsonrequest`; WebSocket enabled; max request body 5 MiB.
+
+## Registering Services
+
+A service is addressed by four coordinates:
+
+- **group** — logical namespace (e.g. `"system"`); the same service name can live in different groups.
+- **service** — the service name (e.g. `"network"`).
+- **service version** — allows multiple versions of one service (e.g. `"1.0"`).
+- **public** — if `false`, the service is registered but not callable from clients.
+
+Group and version are optional; pass empty strings to omit them.
+
+```go
+// without group / version
 app.Register("", "network", "", true, &network{})
 app.Register("", "storage", "", false, &storage{})
 ```
-But if you like, you can also use specified function to register service with group.
-```
+
+Equivalent registration APIs:
+
+```go
+// RegisterService: no group
+app.RegisterService("network", "1.0", true, &network{})
+
+// RegisterWithGroup: fluent group registration
 grp := app.RegisterWithGroup("system")
 grp.Register("network", "1.0", true, &network{})
 grp.Register("storage", "1.0", true, &storage{})
-```
-The following is methods from service "network" and "storage".
-Service's method
-* "network"'s methods
-  * Ping
-  * IP
-  * Restart
-* "storage" 's methods
-  * Add
 
-The return value of method has three types.
-* no return value
-* only one return value, must be 'error'
-* two return values, the first must be result and the second must be 'error'
-
-If you want to return error code, message and data, you can implement the following interface.
+// RegisterAPI: pass an *API struct directly
+app.RegisterAPI(&anserpc.API{
+    Group: "system", Service: "network", Version: "1.0",
+    Public: true, Receiver: &network{},
+})
 ```
+
+> Group, service, and method names are matched **case-insensitively** (normalized to lower case).
+
+### Method Signature Rules
+
+Exported methods of the receiver are discovered automatically. The first
+parameter may optionally be a `context.Context`. Return values must be one of:
+
+- no return value
+- a single `error`
+- a result value **and** an `error` (in that order)
+
+```go
+func (s *svc) A()                          // ok: no return
+func (s *svc) B() error                     // ok: error only
+func (s *svc) C() (string, error)           // ok: result + error
+func (s *svc) D(ctx context.Context) error  // ok: leading context
+func (s *svc) E(ctx context.Context, n int) (int, error) // ok
+```
+
+### Rich Errors
+
+To return a JSON-RPC `error` object with a custom code, message, and data,
+implement one of the error interfaces (fullest shown):
+
+```go
 type ResultError interface {
-	Error() string
-	ErrorCode() int
-	ErrorMessage() string
-	ErrorData() interface{}
+    Error() string
+    ErrorCode() int
+    ErrorMessage() string
+    ErrorData() interface{}
 }
 ```
 
-### Start Application
-The following is output when appliaction starts.
+Partial interfaces `ResultCodeError` (code only) and `ResultDataError`
+(code + data) are also recognized. A plain `error` maps to the default error
+code `-32000` with its message.
+
+## Startup Output
+
 ```
 INFO[03-04|21:02:15] Application register service(s):
 INFO[03-04|21:02:15] built-in_1.0(public) -> Hello
@@ -118,74 +193,110 @@ INFO[03-04|21:02:15] Server(s) shutdown on interrupt(CTRL+C)
 INFO[03-04|21:02:15] Application started
 ```
 
-#### Build-in Services
-Method: Hello
-```
-curl -H "Content-Type: application/json" -X GET --data '{"jsonrpc": "2.0", "id":10001,"service": "built-in", "method": "Hello"}' http://127.0.0.1:56789
+## Calling Services
+
+### Built-in Services
+
+Health check (`Hello`):
+
+```sh
+curl -H "Content-Type: application/json" -X GET \
+  --data '{"jsonrpc":"2.0","id":10001,"service":"built-in","method":"Hello"}' \
+  http://127.0.0.1:56789
 
 {"jsonrpc":"2.0","id":10001,"result":"olleh"}
 ```
 
-Method: Metrics
+Metrics (`Metrics`):
+
+```sh
+curl -H "Content-Type: application/json" -X GET \
+  --data '{"jsonrpc":"2.0","id":10001,"service":"built-in","method":"Metrics"}' \
+  http://127.0.0.1:56789
+
+{"jsonrpc":"2.0","id":10001,"result":"{\"anser/failure\":{\"count\":1},\"anser/requests\":{\"count\":2},\"anser/success\":{\"count\":1}}"}
 ```
- curl -H "Content-Type: application/json" -X GET --data '{"jsonrpc": "2.0", "id":10001,"service": "built-in", "method": "Metrics"}' http://127.0.0.1:56789
 
- {"jsonrpc":"2.0","id":10001,"result":"{\"anser/failure\":{\"count\":1},\"anser/requests\":{\"count\":2},\"anser/success\":{\"count\":1}}"}
-```
+### Registered Services
 
-
-#### Registered Services
-```
-curl -H "Content-Type: application/json" -X GET --data '{"jsonrpc": "2.0", "id":10001,"group": "system", "service": "network", "method": "Ping"}' http://127.0.0.1:56789
-
+```sh
+# returns a plain error
+curl -H "Content-Type: application/json" -X GET \
+  --data '{"jsonrpc":"2.0","id":10001,"group":"system","service":"network","method":"Ping"}' \
+  http://127.0.0.1:56789
 {"jsonrpc":"2.0","id":10001,"error":{"code":-32000,"message":"unknown host"}}
-```
 
-```
-curl -H "Content-Type: application/json" -X GET --data '{"jsonrpc": "2.0", "id":10001,"group": "system", "service": "network", "method": "IP"}'  http://127.0.0.1:56789
-
+# returns a result
+curl -H "Content-Type: application/json" -X GET \
+  --data '{"jsonrpc":"2.0","id":10001,"group":"system","service":"network","method":"IP"}' \
+  http://127.0.0.1:56789
 {"jsonrpc":"2.0","id":10001,"result":"10.0.0.2"}
-```
 
-```
-curl -H "Content-Type: application/json" -X GET --data '{"jsonrpc": "2.0", "id":10001,"group": "system", "service": "storage", "method": "Add"}'  http://127.0.0.1:56789
-
+# returns a rich error (code/message/data)
+curl -H "Content-Type: application/json" -X GET \
+  --data '{"jsonrpc":"2.0","id":10001,"group":"system","service":"storage","method":"Add"}' \
+  http://127.0.0.1:56789
 {"jsonrpc":"2.0","id":10001,"error":{"code":-1,"message":"error message","data":{}}}
-```
 
-```
-curl -H "Content-Type: application/json" -X GET --data '{"jsonrpc": "2.0", "id":10001,"group": "system", "service": "storage", "method": "NotFound"}'  http://127.0.0.1:56789
-
+# unknown method
+curl -H "Content-Type: application/json" -X GET \
+  --data '{"jsonrpc":"2.0","id":10001,"group":"system","service":"storage","method":"NotFound"}' \
+  http://127.0.0.1:56789
 {"jsonrpc":"2.0","id":10001,"error":{"code":-32601,"message":"method not found"}}
 ```
 
-## Quick Sample: IPC
-Anserpc can run both RPC on HTTP and IPC servers.
+### Request / Response Format
+
+Requests extend standard JSON-RPC 2.0 with `group`, `service`, and
+`service_version` fields for addressing:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 10001,
+  "group": "system",
+  "service": "network",
+  "service_version": "1.0",
+  "method": "IP",
+  "params": []
+}
 ```
+
+`params` must be a JSON array (positional). Pointer-typed parameters may be
+omitted and default to the zero value.
+
+## Running Multiple Servers
+
+HTTP and IPC can run simultaneously:
+
+```go
 app := anserpc.New(
     anserpc.WithRPCEndpoint("0.0.0.0", 56789),
     anserpc.WithIPCEndpoint("/var/run/anser.sock"),
 )
 ```
 
-The following is output when appliaction starts.
-```
-INFO[03-06|12:06:11] Application register service(s):
-INFO[03-06|12:06:11] built-in_1.0(public) -> Hello
-INFO[03-06|12:06:11] system: network_1.0(public) -> IP
-INFO[03-06|12:06:11] system: network_1.0(public) -> Ping
-INFO[03-06|12:06:11] system: network_1.0(public) -> Restart
-INFO[03-06|12:06:11] system: storage_1.0(public) -> Add
-INFO[03-06|12:06:11] Application: running using 2 server(s)
-INFO[03-06|12:06:11] HTTP: addr is [::]:56789
-INFO[03-06|12:06:11] HTTP: virtual host is localhost
-INFO[03-06|12:06:11] HTTP: denied method(s): DELETE/PUT
-INFO[03-06|12:06:11] Websocket: enabled
-INFO[03-06|12:06:11] IPC: path is /var/run/anser.sock
-INFO[03-06|12:06:11] Server(s) shutdown on interrupt(CTRL+C)
-INFO[03-06|12:06:11] Application started
-```
+## Error Codes
 
-## LICENSE
+| Code | Meaning |
+| --- | --- |
+| `-32600` | invalid request |
+| `-32601` | method not found |
+| `-32602` | invalid params |
+| `-32603` | internal error |
+| `-32700` | parse error |
+| `-32000` | default error code for plain errors |
+| `-32001` | invalid version |
+| `-32002` | service or method not found |
+| `-32003` | service not found |
+| `-32004` | error return value not found |
+| `-32005` | too many return results |
+| `-32006` | method running crash (recovered panic) |
+| `-32007` | too many params |
+| `-32008` | missing value for params |
+| `-32009` | handling message timeout |
 
-anserpc source code is licensed under the [Apache Licence, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.html).
+## License
+
+`anserpc` source code is licensed under the
+[Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.html).
