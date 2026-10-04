@@ -119,7 +119,7 @@ func (i *ipcServer) doStop() {
 
 func (i *ipcServer) serveIPC(conn net.Conn) {
 	ctx := context.WithValue(context.Background(),
-		"anser-local", conn.LocalAddr())
+		ctxRemoteAddr, conn.LocalAddr())
 
 	localConn := &ipcServerConn{
 		Reader:                 io.LimitReader(conn, _maxReqContentLength),

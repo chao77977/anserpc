@@ -16,7 +16,7 @@ type API struct {
 
 // built-in APIs
 var _builtInAPIs = []*API{
-	&API{
+	{
 		Service:  "built-in",
 		Version:  "1.0",
 		Receiver: &builtInService{},

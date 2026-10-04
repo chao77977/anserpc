@@ -12,6 +12,15 @@ var (
 	Fmt = util.Fmt
 )
 
+// ctxKey is an unexported type for context keys defined in this package,
+// avoiding collisions with keys defined elsewhere (staticcheck SA1029).
+type ctxKey string
+
+const (
+	// ctxRemoteAddr carries the client/peer address of the active connection.
+	ctxRemoteAddr ctxKey = "anser-remote-addr"
+)
+
 type serverStatus int
 
 type waitProc interface {
