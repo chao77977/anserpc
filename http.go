@@ -306,7 +306,7 @@ func (h *httpServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", _defAppJson)
 
 	ctx := r.Context()
-	ctx = context.WithValue(ctx, "anser-remote", r.RemoteAddr)
+	ctx = context.WithValue(ctx, ctxRemoteAddr, r.RemoteAddr)
 
 	conn := &httpServerConn{
 		Reader: io.LimitReader(r.Body, _maxReqContentLength),

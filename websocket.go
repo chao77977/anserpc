@@ -40,7 +40,7 @@ func (ws *websocketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := context.WithValue(context.Background(),
-		"anser-websocket-remote", conn.RemoteAddr())
+		ctxRemoteAddr, conn.RemoteAddr())
 
 	jwc := newWebSocketCodec(conn)
 	defer jwc.close()
