@@ -1,0 +1,36 @@
+# golangci-lint configuration for anserpc.
+#
+# This enables a pragmatic set of linters that catch real problems without
+# blocking CI on pre-existing issues that are tracked separately for the
+# v0.2.0 "Code hardening" work (see docs/ROADMAP.md).
+
+run:
+  timeout: 5m
+  tests: true
+
+linters:
+  disable-all: true
+  enable:
+    - govet        # suspicious constructs
+    - ineffassign  # ineffectual assignments
+    - staticcheck  # broad correctness/style checks
+    - unused        # unused code
+    - misspell     # common spelling mistakes
+    - gofmt        # formatting
+    - goimports    # import grouping/formatting
+
+issues:
+  # Show all issues, not just new ones.
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  exclude-rules:
+    # example_test.go is a documentation sample (package main style). Its
+    # symbols are intentionally "unused" from the linter's perspective.
+    - path: example_test.go
+      linters:
+        - unused
+    # _errInternal is reserved for future use; keep it defined.
+    - path: errors.go
+      text: "`_errInternal` is unused"
+      linters:
+        - unused

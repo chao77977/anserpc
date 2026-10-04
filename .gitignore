@@ -1,0 +1,13 @@
+# Test and coverage artifacts
+coverage.out
+coverage.html
+*.test
+*.out
+
+# Build output
+/bin/
+/dist/
+
+# Editor/OS
+.DS_Store
+*.swp
