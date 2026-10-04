@@ -103,7 +103,7 @@ func (i *ipcServer) wait() {
 
 func (i *ipcServer) stop() {
 	i.mu.Lock()
-	defer i.mu.Lock()
+	defer i.mu.Unlock()
 	i.doStop()
 }
 
