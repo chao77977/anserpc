@@ -24,6 +24,12 @@ issues:
   max-issues-per-linter: 0
   max-same-issues: 0
   exclude-rules:
+    # Test files contain fixtures and intentionally-ignored methods
+    # (e.g. an unexported method defined only to assert it is NOT
+    # registered). The unused linter cannot see that intent.
+    - path: _test\.go
+      linters:
+        - unused
     # example_test.go is a documentation sample (package main style). Its
     # symbols are intentionally "unused" from the linter's perspective.
     - path: example_test.go
