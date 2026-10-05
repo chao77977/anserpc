@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net/http"
 	"testing"
 )
 
@@ -167,5 +168,33 @@ func TestBatchCall_Empty(t *testing.T) {
 	c := newClient(nil)
 	if err := c.BatchCall(context.Background(), nil); err != nil {
 		t.Errorf("empty batch should be a no-op, got %v", err)
+	}
+}
+
+func TestWithHTTPClient(t *testing.T) {
+	custom := &http.Client{}
+	c, err := DialHTTP("http://example.invalid", WithHTTPClient(custom))
+	if err != nil {
+		t.Fatal(err)
+	}
+	ht, ok := c.t.(*httpTransport)
+	if !ok {
+		t.Fatalf("expected httpTransport, got %T", c.t)
+	}
+	if ht.client != custom {
+		t.Error("WithHTTPClient did not set the custom client")
+	}
+}
+
+func TestDialHTTP_EmptyURL(t *testing.T) {
+	if _, err := DialHTTP(""); err == nil {
+		t.Error("empty URL should error")
+	}
+}
+
+func TestError_EmptyMessage(t *testing.T) {
+	e := &Error{Code: -5}
+	if e.Error() == "" {
+		t.Error("Error() should fall back to code-only message")
 	}
 }
