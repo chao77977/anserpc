@@ -265,6 +265,51 @@ Requests extend standard JSON-RPC 2.0 with `group`, `service`, and
 `params` must be a JSON array (positional). Pointer-typed parameters may be
 omitted and default to the zero value.
 
+## Client SDK
+
+A Go client lives in the [`client`](client) subpackage. It speaks the same
+wire format over HTTP, WebSocket, and IPC, and supports single and batch calls.
+
+```go
+import "github.com/chao77977/anserpc/client"
+
+c, err := client.DialHTTP("http://127.0.0.1:56789")
+if err != nil {
+    // handle
+}
+defer c.Close()
+
+// single call
+var ip string
+err = c.Call(context.Background(), &ip, client.Request{
+    Group: "system", Service: "network", Version: "1.0", Method: "IP",
+})
+
+// typed error with code / message / data
+if e, ok := client.AsError(err); ok {
+    log.Printf("rpc error %d: %s", e.ErrorCode(), e.ErrorMessage())
+}
+```
+
+Other transports:
+
+```go
+c, _ := client.DialWebSocket("ws://127.0.0.1:56789")
+c, _ := client.DialIPC("/var/run/anser.sock")
+```
+
+Batch call:
+
+```go
+var a, b int
+elems := []client.BatchElem{
+    {Request: client.Request{Service: "calc", Method: "Add", Params: []interface{}{1, 2}}, Result: &a},
+    {Request: client.Request{Service: "calc", Method: "Add", Params: []interface{}{3, 4}}, Result: &b},
+}
+_ = c.BatchCall(context.Background(), elems)
+// each element's per-call error is in elems[i].Error
+```
+
 ## Running Multiple Servers
 
 HTTP and IPC can run simultaneously:

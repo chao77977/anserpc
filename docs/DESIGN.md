@@ -13,10 +13,10 @@ and users who want to understand how the library works beyond the public API.
   pipeline.
 - Keep the dependency surface and configuration surface small.
 
-Non-goals: this is a **server-side** library — it does not ship a client; it does
-not implement JSON-RPC notifications/subscriptions as a first-class feature; it
-does not provide authentication/authorization beyond transport-level checks
-(vhost allowlist, denied methods, content-type validation).
+Non-goals: this library does not implement JSON-RPC notifications/subscriptions
+as a first-class feature; it does not provide authentication/authorization
+beyond transport-level checks (vhost allowlist, denied methods, content-type
+validation). A companion Go client ships in the `client` subpackage (see §4.10).
 
 ## 2. Protocol Model
 
@@ -257,6 +257,35 @@ the built-in `Metrics` method.
   SIGINT/SIGTERM out to all registered callbacks.
 - `net.go`: `IsTemporaryError` for the IPC accept loop.
 
+### 4.10 Client — `client/`
+
+A companion Go client lives in the `client` subpackage. It reuses the exact
+wire format (`wireRequest`/`wireResponse` mirror the server's `jsonMessage`)
+and is organized around a small `transport` interface:
+
+```go
+type transport interface {
+    roundTrip(ctx context.Context, reqs []*wireRequest) ([]*wireResponse, error)
+    close() error
+}
+```
+
+- `Client` is transport-agnostic and exposes `Call` (single) and `BatchCall`
+  (JSON-RPC batch). Request ids are assigned from an atomic counter; batch
+  responses are matched back to requests by id, so server reordering is safe.
+- `httpTransport` (`DialHTTP`) issues one HTTP POST per round-trip and is
+  concurrency-safe via `net/http`. `WithHTTPClient` injects a custom client.
+- `ipcTransport` (`DialIPC`) holds a persistent unix-socket connection and
+  serializes round-trips with a mutex, using a `json.Encoder`/`Decoder` pair
+  (decoder `UseNumber`, matching the server).
+- `wsTransport` (`DialWebSocket`) holds a persistent gorilla/websocket
+  connection, likewise mutex-serialized.
+- `Error` mirrors the server error object (code/message/data) and implements
+  the same accessor methods; `AsError` extracts it from a returned `error`,
+  and `ErrorData` decodes the optional data payload.
+- Context deadlines/cancellation are honored: the streaming transports set
+  socket deadlines from the context and check for cancellation before I/O.
+
 ## 5. Request Lifecycle (End to End)
 
 Taking an HTTP call to `system/network/IP` as an example:
@@ -310,8 +339,8 @@ Taking an HTTP call to `system/network/IP` as an example:
   registry's `callback` does this).
 - **Timeout granularity.** The handler timeout is a fixed 3600s constant; making
   it configurable per-application would be a useful enhancement.
-- **No client library / notifications.** Only server-side request/response is
-  implemented.
+- **Notifications/subscriptions** are not implemented; only request/response.
+  A companion Go client is provided (see §4.10).
 
 ## 9. File Map
 
